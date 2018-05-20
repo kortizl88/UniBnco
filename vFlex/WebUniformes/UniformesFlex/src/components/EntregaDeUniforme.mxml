@@ -1,0 +1,394 @@
+<?xml version="1.0"?>
+<containers:UniformesTitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+                                 xmlns:mx="library://ns.adobe.com/flex/mx"
+                                 xmlns:s="library://ns.adobe.com/flex/spark"
+                                 xmlns:assets="assets.*" xmlns:components="components.*"
+                                 skinClass="skins.RedTitleWindowSkin"
+                                 title="Entrega de Uniformes"
+                                 xmlns:containers="containers.*">
+    <fx:Declarations>
+        <s:Fade id="fadeIn" alphaFrom="0" alphaTo="1"/>
+        <mx:RemoteObject id="pedidosPendientes"
+                         destination="pedidosPendientes"
+                         channelSet="{ROUtil.channelSet}"
+                         result="consultaPedidosHandler(event)"
+                         fault="consultaPedidosFault(event)"
+                         concurrency="last"/>
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import mx.collections.ArrayCollection;
+        import mx.core.FlexGlobals;
+        import mx.core.IFlexDisplayObject;
+        import mx.events.CloseEvent;
+        import mx.managers.PopUpManager;
+        import mx.rpc.events.FaultEvent;
+        import mx.rpc.events.ResultEvent;
+
+        import spark.components.Alert;
+        import spark.events.IndexChangeEvent;
+
+        import utils.MensajeUtil;
+        import utils.ROUtil;
+        import utils.StringUtils;
+
+        [Bindable]
+        private var _idEmpleado:Number;
+
+        [Bindable]
+        private var _nombreEmpleado:String;
+
+        private var _nombreFuncion:String;
+
+        private static const ESTATUS_EMP:String = "0";
+        private static const ESTATUS_DIST:String = "4";
+
+        private var ipServidorHuellas:String;
+
+        private var idEmpValidaHuella:String;
+
+        private var idEstatus:String = ESTATUS_EMP;
+
+        [Bindable]
+        private var pedidos:ArrayCollection;
+
+        [Bindable]
+        private var _flagManualImagen:Boolean;
+
+        [Embed(source='/assets/exclamation3.png')]
+        private var iconWarn:Class;
+
+        public function get idEmpleado():Number {
+            return _idEmpleado;
+        }
+
+        public function set idEmpleado(value:Number):void {
+            _idEmpleado = value;
+        }
+
+        public function get nombreEmpleado():String {
+            return _nombreEmpleado;
+        }
+
+        public function set nombreEmpleado(value:String):void {
+            _nombreEmpleado = value;
+        }
+
+        public function get nombreFuncion():String {
+            return _nombreFuncion;
+        }
+
+        public function set nombreFuncion(value:String):void {
+            _nombreFuncion = value;
+        }
+
+        public function set flagManualImagen(value:Boolean):void {
+            _flagManualImagen = value;
+        }
+
+        public function consultarPedidos():void {
+            //TODO: Agregar token para poder diferenciar el estatus al momento de manejar la respuesta
+            currentState = "CargandoPedidos";
+            filtroEmpleadoInput.text = "";
+            filtroDistritalInput.text = "";
+            pedidosPendientes.consPedPend(this.idEmpleado, idEstatus);
+        }
+
+        private function consultaPedidosFault(event:FaultEvent):void {
+            MensajeUtil.mostrarMensajeFault(event, cerrarVentana);
+        }
+
+        private function consultaPedidosHandler(event:ResultEvent):void {
+            if (!MensajeUtil.validaServiceResponse(event, cerrarVentana)) {
+                return;
+            }
+            ipServidorHuellas = event.result.ip;
+
+            //TODO: Usar 2 arrays distintos
+            pedidos = event.result.lsPedPends;
+            currentState = "PedidosCargados";
+        }
+
+        private function cerrarVentana(event:CloseEvent = null):void {
+            this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+        }
+
+        public function abrirDetalle(data:Object):void {
+            if (idEstatus == ESTATUS_DIST && data.numEmpDistrital == 0) {
+                Alert.show("El pedido no tiene un distrital asignado a quien entregarse.", "No se puede entregar.", Alert.OK, this, null, iconWarn);
+                return;
+            }
+            var detalleTitleWindow:EntregaDetalleTitleWindow = EntregaDetalleTitleWindow(
+                    PopUpManager.createPopUp(
+                            DisplayObject(FlexGlobals.topLevelApplication),
+                            EntregaDetalleTitleWindow,
+                            true));
+            detalleTitleWindow.idEmpEntrega = this.idEmpleado;
+            detalleTitleWindow.detallePedido = data.detalle;
+            detalleTitleWindow.idEmpPedido = data.idEmpelado;
+            detalleTitleWindow.nombreEmpEntrega = this.nombreEmpleado;
+            detalleTitleWindow.ipServHuella = this.ipServidorHuellas;
+            detalleTitleWindow.puestoEmpEntrega = this.nombreFuncion;
+            detalleTitleWindow.addEventListener(Event.CLOSE, cerrarDetalle);
+            if (idEstatus == ESTATUS_EMP) {
+                detalleTitleWindow.idEmpRecibe = data.idEmpelado;
+                detalleTitleWindow.nombreEmpRecibe = data.empleadoNombre;
+                detalleTitleWindow.esDistrital = false;
+            } else {
+                detalleTitleWindow.idEmpRecibe = data.numEmpDistrital;
+                detalleTitleWindow.nombreEmpRecibe = data.fcEmpleadoNombre;
+                detalleTitleWindow.esDistrital = true;
+            }
+
+            detalleTitleWindow.addEventListener("procesoFinalizado", recargarDatos);
+            PopUpManager.centerPopUp(detalleTitleWindow);
+        }
+
+        private static function cerrarDetalle(event:Event):void {
+            PopUpManager.removePopUp(IFlexDisplayObject(event.target));
+
+        }
+
+        private function recargarDatos(event:Event):void {
+            filtroEmpleadoInput.text = "";
+            filtroDistritalInput.text = "";
+            pedidosPendientes.consPedPend(this.idEmpleado, idEstatus);
+        }
+
+        private function filtrarPorEmpleado(item:Object):Boolean {
+            var tempString:String = item.idEmpelado.toString();
+            return tempString.indexOf(filtroEmpleadoInput.text, 0) != -1;
+        }
+
+        private function filtrarPorEmpYDist(item:Object):Boolean {
+            var tempEmp:String = item.idEmpelado.toString();
+            var tempDist:String = item.numEmpDistrital.toString();
+            var result:Boolean = tempEmp.indexOf(filtroDistritalInput.text, 0) != -1;
+            result = result || tempDist.indexOf(filtroDistritalInput.text, 0) != -1;
+            return result;
+        }
+
+        private function filtrarEmpleados():void {
+            if (filtroEmpleadoInput.text.length == 0) {
+                pedidos.filterFunction = null;
+            } else {
+                pedidos.filterFunction = filtrarPorEmpleado;
+            }
+            pedidos.refresh();
+        }
+
+        private function filtrarDistrital():void {
+            if (filtroDistritalInput.text.length == 0) {
+                pedidos.filterFunction = null;
+            } else {
+                pedidos.filterFunction = filtrarPorEmpYDist;
+            }
+            pedidos.refresh();
+        }
+
+        private function tabBarChangeHandler(event:IndexChangeEvent):void {
+            idEstatus = event.newIndex == 0 ? ESTATUS_EMP : ESTATUS_DIST;
+            empleadosGroup.visible = (event.newIndex == 0);
+            distritalGroup.visible = (event.newIndex == 1);
+            consultarPedidos();
+        }
+        ]]>
+    </fx:Script>
+
+    <containers:transitions>
+        <s:Transition toState="PedidosCargados">
+            <s:Sequence>
+                <s:SetAction property="visible" value="false" target="{spinnerEmpGroup}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{spinnerEmpGroup}"/>
+                <s:SetAction property="visible" value="false" target="{spinnerDistGroup}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{spinnerDistGroup}"/>
+
+                <s:SetAction property="includeInLayout" value="true" target="{pedidosDataGrid}"/>
+                <s:SetAction property="visible" value="true" target="{pedidosDataGrid}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{pedidosDistDataGrid}"/>
+                <s:SetAction property="visible" value="true" target="{pedidosDistDataGrid}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{filtroEmpleados}"/>
+                <s:SetAction property="visible" value="true" target="{filtroEmpleados}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{filtroDistrital}"/>
+                <s:SetAction property="visible" value="true" target="{filtroDistrital}"/>
+
+            </s:Sequence>
+        </s:Transition>
+        <s:Transition toState="CargandoPedidos">
+            <s:Sequence>
+                <s:SetAction property="visible" value="false" target="{pedidosDataGrid}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{pedidosDataGrid}"/>
+                <s:SetAction property="visible" value="false" target="{pedidosDistDataGrid}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{pedidosDistDataGrid}"/>
+                <s:SetAction property="visible" value="false" target="{filtroEmpleados}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{filtroEmpleados}"/>
+                <s:SetAction property="visible" value="false" target="{filtroDistrital}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{filtroDistrital}"/>
+
+                <s:SetAction property="includeInLayout" value="true" target="{spinnerEmpGroup}"/>
+                <s:SetAction property="visible" value="true" target="{spinnerEmpGroup}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{spinnerDistGroup}"/>
+                <s:SetAction property="visible" value="true" target="{spinnerDistGroup}"/>
+
+            </s:Sequence>
+        </s:Transition>
+    </containers:transitions>
+    <containers:states>
+        <s:State name="CargandoPedidos"/>
+        <s:State name="PedidosCargados"/>
+    </containers:states>
+
+    <containers:rightControlContent>
+        <components:BotonAyuda numEmpleado="{_idEmpleado}" nombreEmpleado="{_nombreEmpleado}"/>
+    </containers:rightControlContent>
+
+    <containers:leftControlContent>
+        <s:Image xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+                 source="@Embed(source='/assets/book_info.png')" left="5" top="3"
+                 useHandCursor="true"
+                 mouseChildren="false"
+                 buttonMode="true"
+                 click="{this.dispatchEvent(new Event('manualDeImagen'))}"
+                 visible="{_flagManualImagen}"/>
+    </containers:leftControlContent>
+
+    <containers:layout>
+        <s:VerticalLayout gap="0"
+                          horizontalAlign="left" paddingTop="5" paddingLeft="5" paddingRight="5"
+                          paddingBottom="5"/>
+    </containers:layout>
+    <s:TabBar id="tabBar" change="tabBarChangeHandler(event)">
+        <mx:ArrayCollection>
+            <fx:String>Empleados</fx:String>
+            <fx:String>Distrital</fx:String>
+        </mx:ArrayCollection>
+    </s:TabBar>
+    <s:Group id="tabNavigator" width="100%" height="100%">
+        <s:Rect top="0" left="0" bottom="0" right="0">
+            <s:stroke>
+                <s:SolidColorStroke color="gray"/>
+            </s:stroke>
+        </s:Rect>
+        <s:VGroup id="empleadosGroup" top="0" left="0" bottom="0" right="0"
+                  paddingRight="3" paddingLeft="3" paddingBottom="3">
+            <s:HGroup id="spinnerEmpGroup" paddingBottom="10" verticalAlign="middle" horizontalAlign="center"
+                      width="100%" height="100%">
+                <assets:Spinner tickColor="#66aaff"/>
+                <s:Label text="Cargando datos..."/>
+            </s:HGroup>
+            <s:HGroup id="filtroEmpleados" visible="false" includeInLayout="false" verticalAlign="middle"
+                      paddingTop="5"
+                      paddingBottom="0">
+                <s:Label text="Búsqueda por número de empleado:"/>
+                <s:TextInput id="filtroEmpleadoInput" change="filtrarEmpleados()" width="90"/>
+            </s:HGroup>
+            <s:DataGrid id="pedidosDataGrid"
+                        includeInLayout="false"
+                        visible="false"
+                        showEffect="{fadeIn}"
+                        width="100%"
+                        textAlign="center"
+                        height="100%" dataProvider="{pedidos}">
+                <s:columns>
+                    <mx:ArrayCollection>
+                        <s:GridColumn width="26">
+                            <s:itemRenderer>
+                                <fx:Component>
+                                    <s:GridItemRenderer width="100%" height="100%">
+                                        <s:layout>
+                                            <s:VerticalLayout horizontalAlign="center" verticalAlign="middle"/>
+                                        </s:layout>
+                                        <fx:Script>
+                                            <![CDATA[
+                                            private function abrirDetalle(data:Object):void {
+                                                outerDocument.abrirDetalle(data);
+                                            }
+                                            ]]>
+                                        </fx:Script>
+                                        <s:Button icon="@Embed(source='/assets/icon_add_b.png')"
+                                                  click="abrirDetalle(data)"
+                                                  width="22"/>
+                                    </s:GridItemRenderer>
+                                </fx:Component>
+                            </s:itemRenderer>
+                        </s:GridColumn>
+                        <s:GridColumn dataField="idEmpelado" headerText="Empleado" minWidth="70"/>
+                        <s:GridColumn dataField="empleadoNombre" headerText="Nombre" minWidth="215"
+                                      labelFunction="StringUtils.capitalizeDataGridColumn"/>
+                        <s:GridColumn dataField="descFuncion" headerText="Puesto" minWidth="215"
+                                      labelFunction="StringUtils.capitalizeDataGridColumn"/>
+                        <s:GridColumn dataField="cencosNum" headerText="C. C." minWidth="50"/>
+                        <s:GridColumn dataField="clave" headerText="Negocio" minWidth="60"/>
+                        <s:GridColumn dataField="folioPedido" headerText="Folio" minWidth="60"/>
+                    </mx:ArrayCollection>
+                </s:columns>
+
+            </s:DataGrid>
+        </s:VGroup>
+        <s:VGroup id="distritalGroup" top="0" left="0" bottom="0" right="0"
+                  paddingRight="3" paddingLeft="3" paddingBottom="3" visible="false">
+            <s:HGroup id="spinnerDistGroup" paddingBottom="10" verticalAlign="middle" horizontalAlign="center"
+                      width="100%" height="100%">
+                <assets:Spinner tickColor="#66aaff"/>
+                <s:Label text="Cargando datos..."/>
+            </s:HGroup>
+            <s:HGroup id="filtroDistrital" visible="false" includeInLayout="false" verticalAlign="middle"
+                      paddingTop="5"
+                      paddingBottom="0">
+                <s:Label text="Búsqueda por número de empleado:"/>
+                <s:TextInput id="filtroDistritalInput" change="filtrarDistrital()" width="90"/>
+            </s:HGroup>
+            <s:DataGrid id="pedidosDistDataGrid"
+                        includeInLayout="false"
+                        visible="false"
+                        showEffect="{fadeIn}"
+                        width="100%"
+                        textAlign="center"
+                        height="100%"
+                        dataProvider="{pedidos}">
+                <s:columns>
+                    <mx:ArrayCollection>
+                        <s:GridColumn width="26">
+                            <s:itemRenderer>
+                                <fx:Component>
+                                    <s:GridItemRenderer>
+                                        <s:layout>
+                                            <s:VerticalLayout horizontalAlign="center" verticalAlign="middle"/>
+                                        </s:layout>
+                                        <fx:Script>
+                                            <![CDATA[
+                                            private function abrirDetalle(data:Object):void {
+                                                outerDocument.abrirDetalle(data);
+                                            }
+                                            ]]>
+                                        </fx:Script>
+                                        <s:Button icon="@Embed(source='/assets/icon_add_b.png')"
+                                                  click="abrirDetalle(data)"
+                                                  width="22"/>
+                                    </s:GridItemRenderer>
+                                </fx:Component>
+                            </s:itemRenderer>
+                        </s:GridColumn>
+                        <s:GridColumn dataField="idEmpelado" headerText="Empleado"
+                                      minWidth="70"/>
+                        <s:GridColumn dataField="empleadoNombre" headerText="Nombre"
+                                      minWidth="110" labelFunction="StringUtils.capitalizeDataGridColumn"/>
+                        <s:GridColumn dataField="descFuncion" headerText="Puesto"
+                                      minWidth="110" labelFunction="StringUtils.capitalizeDataGridColumn"/>
+                        <s:GridColumn dataField="numEmpDistrital" headerText="Distrital"
+                                      minWidth="70"/>
+                        <s:GridColumn dataField="fcEmpleadoNombre" headerText="Nombre Distrital"
+                                      minWidth="110" labelFunction="StringUtils.capitalizeDataGridColumn"/>
+                        <s:GridColumn dataField="cencosNum" headerText="C. C."
+                                      minWidth="50"/>
+                        <s:GridColumn dataField="clave" headerText="Negocio"
+                                      minWidth="60"/>
+                        <s:GridColumn dataField="folioPedido" headerText="Folio"
+                                      minWidth="60"/>
+                    </mx:ArrayCollection>
+                </s:columns>
+
+            </s:DataGrid>
+        </s:VGroup>
+    </s:Group>
+</containers:UniformesTitleWindow>

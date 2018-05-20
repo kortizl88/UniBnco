@@ -1,0 +1,280 @@
+<?xml version="1.0"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+               xmlns:s="library://ns.adobe.com/flex/spark" xmlns:assets="assets.*"
+               xmlns:mx="library://ns.adobe.com/flex/mx"
+               title="Solicitud de reposición de herramienta de trabajo" creationComplete="creationCompleteHandler()">
+    <fx:Declarations>
+        <s:RemoteObject id="reposicionesService"
+                        destination="reposicionesService"
+                        channelSet="{ROUtil.channelSet}"
+                        result="solicitaReposicionHandler(event)"
+                        fault="faultHandler(event)"/>
+        <fx:Array id="validators">
+            <mx:PhoneNumberValidator id="phoneNumberValidator"
+                                     source="{telefonoInput}"
+                                     property="text"
+                                     required="true" minDigits="8"
+                                     wrongLengthError="Tu teléfono debe contener al menos 8 dígitos."
+                                     invalidCharError="Tu número telefonico contiene caracteres inválidos."
+                                     requiredFieldError="Por favor ingresa tu número telefónico."/>
+            <mx:EmailValidator id="emailValidator"
+                               source="{correoInput}"
+                               property="text"
+                               required="true"
+                               invalidPeriodsInDomainError="El dominio en tu correo tiene puntos contínuos."
+                               missingAtSignError="Falta el simbolo @ en tu correo."
+                               invalidCharError="Tu correo contiene caracteres inválidos."
+                               missingPeriodInDomainError="Falta un punto en el dominio de tu correo."
+                               missingUsernameError="Falta el usuario en tu dirección de correo."
+                               tooManyAtSignsError="Tu correo tiene demasiados caracteres @."
+                               invalidIPDomainError="La IP del dominio no contiene un formato válido, debe ir entre corchetes."
+                               invalidDomainError="El dominio en tu correo no contiene un formato válido."
+                               requiredFieldError="Por favor ingresa tu correo electrónico."/>
+            <mx:StringValidator id="stringValidator"
+                                source="{mensajeTextArea}"
+                                property="text"
+                                required="true"
+                                requiredFieldError="Por favor ingresa tu mensaje."/>
+            <mx:NumberValidator id="motivoValidator"
+                                source="{motivoList}"
+                                property="selectedIndex"
+                                minValue="0"
+                                lowerThanMinError="Por favor selecciona un valor de la lista"/>
+        </fx:Array>
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import model.ItemUniforme;
+        import model.ReposicionDto;
+
+        import mx.collections.ArrayCollection;
+        import mx.events.CloseEvent;
+        import mx.rpc.events.FaultEvent;
+        import mx.rpc.events.ResultEvent;
+        import mx.utils.StringUtil;
+        import mx.validators.Validator;
+
+        import spark.components.Alert;
+
+        import utils.MensajeUtil;
+        import utils.ROUtil;
+
+        private var _idEmpleado:Number;
+
+        [Bindable]
+        private var _nombreEmpleado:String;
+
+        private var _datos:ItemUniforme;
+
+        private var fileReference:FileReference;
+        private var byteArray:ByteArray;
+        private var fileName:String;
+        private var fileType:String;
+
+        public static const REPOSICION_GENERADA:String = "reposicionGenerada";
+
+        [Embed(source='/assets/success.png')]
+        private var iconSuccess:Class;
+
+        private const typeFilter:Array = [new FileFilter("Imagenes", "*.jpg;*.gif;*.png")];
+
+        private const motivosDataProvider:ArrayCollection = new ArrayCollection(
+                ["Robo", "Accidente", "Extravío", "Otro"]
+        );
+
+        private var nombreArchivo:String;
+
+        private var reposicionDto:ReposicionDto;
+
+        public function get idEmpleado():Number {
+            return _idEmpleado;
+        }
+
+        public function set idEmpleado(value:Number):void {
+            _idEmpleado = value;
+        }
+
+        public function get nombreEmpleado():String {
+            return _nombreEmpleado;
+        }
+
+        public function set nombreEmpleado(value:String):void {
+            _nombreEmpleado = value;
+        }
+
+        public function get datos():ItemUniforme {
+            return _datos;
+        }
+
+        public function set datos(value:ItemUniforme):void {
+            _datos = value;
+        }
+
+        private function creationCompleteHandler():void {
+            fileReference = new FileReference();
+            fileReference.addEventListener(Event.SELECT, selectionHandler);
+            fileReference.addEventListener(IOErrorEvent.IO_ERROR, ioErrorHandler);
+            fileReference.addEventListener(Event.COMPLETE, loadCompleteHandler);
+        }
+
+        private function examinar():void {
+            fileReference.browse(typeFilter);
+        }
+
+        private function selectionHandler(event:Event):void {
+            fileReference.load();
+        }
+
+        private static function ioErrorHandler(event:IOErrorEvent):void {
+            MensajeWindow.show("Error al cargar el archivo: " + event.text, "No se pudo cargar el archivo", MensajeWindow.LEVEL_ERROR);
+        }
+
+        private function loadCompleteHandler(event:Event):void {
+            byteArray = fileReference.data;
+            fileName = fileReference.name;
+            fileType = fileReference.type;
+            archivoLabel.text = fileName;
+        }
+
+        private function solicitaReposicionHandler(event:ResultEvent):void {
+            if (!MensajeUtil.validaServiceResponse(event)) {
+                cerrarSolicitud();
+                return;
+            }
+            var mensaje:String;
+            if (event.result.autorizante != null) {
+                mensaje = StringUtil.substitute(
+                        "El folio de tu solicitud es {0}.\nTu solicitud de {1} será autorizada a la brevedad por tu {2} {3}, cualquier duda contactar a Hugo Daniel Garcia Macias a la extensión 78042.",
+                        event.result.folioReposicon,
+                        reposicionDto.descripcionCorta,
+                        event.result.autorizante.puesto,
+                        event.result.autorizante.nombre);
+            } else {
+                mensaje = StringUtil.substitute(
+                        "El folio de tu solicitud es {0}.\nTu solicitud de {1} será autorizada a la brevedad por tu Regional, cualquier duda contactar a Hugo Daniel Garcia Macias a la extensión 78042.",
+                        event.result.folioReposicon,
+                        reposicionDto.descripcionCorta);
+            }
+            Alert.show(mensaje, "Solicitud de reposición generada.", Alert.OK, this, cerrarSolicitud, iconSuccess);
+        }
+
+        private function reactivar():void {
+            spinnerGroup.visible = false;
+            enviarButton.enabled = true;
+            spinner.stop();
+        }
+
+        private function faultHandler(event:FaultEvent):void {
+            reactivar();
+            MensajeUtil.mostrarMensajeFault(event);
+        }
+
+        private function enviarSolicitud():void {
+            if (Validator.validateAll(validators).length > 0) {
+                return;
+            }
+            desactivar();
+            var pattern:RegExp = /(\w+).*/;
+            reposicionDto = new ReposicionDto();
+            reposicionDto.idEmpleado = _idEmpleado;
+            reposicionDto.nombreEmpleado = _nombreEmpleado;
+            reposicionDto.correo = correoInput.text;
+            reposicionDto.telefono = telefonoInput.text;
+            reposicionDto.motivo = motivoList.selectedItem;
+            reposicionDto.mensaje = mensajeTextArea.text;
+            reposicionDto.descripcionCorta = datos.descripcion.replace(pattern, "$1");
+            for each(var idSubkit:Number in _datos.subkitsIds) {
+                reposicionDto.idSubkit = idSubkit;
+                reposicionesService.solicitaReposicion(reposicionDto, byteArray, fileName, fileType);
+            }
+        }
+
+        private function desactivar():void {
+            spinnerGroup.visible = true;
+            enviarButton.enabled = false;
+            spinner.play();
+        }
+
+        private function cerrarSolicitud(event:CloseEvent = null):void {
+            this.dispatchEvent(new Event(REPOSICION_GENERADA));
+            this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+        }
+        ]]>
+    </fx:Script>
+    <s:Group top="0" bottom="0" left="0" right="0">
+        <s:VGroup width="100%" paddingTop="10" paddingBottom="5" paddingLeft="5" paddingRight="5">
+            <s:HGroup width="100%" verticalAlign="middle">
+                <s:Group width="40%">
+                    <s:Label text="Nombre:" width="100%" fontWeight="bold" textAlign="right"/>
+                </s:Group>
+                <s:Group width="60%">
+                    <s:Label text="{_nombreEmpleado}"/>
+                </s:Group>
+            </s:HGroup>
+            <s:HGroup width="100%" verticalAlign="middle">
+                <s:Group width="40%">
+                <s:Label text="Motivo:" width="100%" fontWeight="bold" textAlign="right"/>
+                </s:Group>
+                <s:Group width="60%">
+                    <s:DropDownList id="motivoList" dataProvider="{motivosDataProvider}" prompt="- Selecciona -"
+                                    width="150"/>
+                </s:Group>
+            </s:HGroup>
+            <s:HGroup width="100%" verticalAlign="middle">
+                <s:Group width="40%">
+                    <s:Label text="Correo:" width="100%" fontWeight="bold" textAlign="right"/>
+                </s:Group>
+                <s:Group width="60%">
+                    <s:TextInput id="correoInput"/>
+                </s:Group>
+            </s:HGroup>
+            <s:HGroup width="100%" verticalAlign="middle">
+                <s:Group width="40%">
+                    <s:Label text="Teléfono:" width="100%" fontWeight="bold" textAlign="right"/>
+                </s:Group>
+                <s:Group width="60%">
+                    <s:TextInput id="telefonoInput"/>
+                </s:Group>
+            </s:HGroup>
+            <s:HGroup width="100%" verticalAlign="middle">
+                <s:Group width="40%">
+                    <s:Label text="Mensaje:" width="100%" fontWeight="bold" textAlign="right"/>
+                </s:Group>
+                <s:Group width="60%">
+                    <s:TextArea id="mensajeTextArea" maxChars="300"/>
+                </s:Group>
+            </s:HGroup>
+            <s:HGroup width="100%" verticalAlign="middle">
+                <s:Group width="40%">
+                    <s:Label text="Adjuntar archivo:" width="100%" fontWeight="bold" textAlign="right"/>
+                </s:Group>
+                <s:HGroup width="60%" gap="-2">
+                    <s:TextInput id="archivoLabel" editable="false" prompt="Examinar..."/>
+                    <s:Button id="examinarButton" icon="@Embed(source='/assets/open-smallicon.png')" click="examinar()"
+                              height="100%" width="25" cornerRadius="0"/>
+                </s:HGroup>
+            </s:HGroup>
+        </s:VGroup>
+    </s:Group>
+    <s:Group top="0" bottom="0" left="0" right="0" id="spinnerGroup" visible="false">
+        <s:Rect top="0" bottom="0" left="0" right="0">
+            <s:fill>
+                <s:SolidColor color="0xFFFFFF" alpha="0.67"/>
+            </s:fill>
+        </s:Rect>
+        <s:VGroup verticalAlign="middle"
+                  horizontalAlign="center"
+                  width="100%" height="100%">
+            <assets:Spinner id="spinner" tickColor="#66aaff"/>
+            <s:Label id="spinnerLabel" text="Enviando solicitud..."/>
+        </s:VGroup>
+    </s:Group>
+    <s:controlBarContent>
+        <s:HGroup width="100%" horizontalAlign="center">
+            <s:Button id="enviarButton"
+                      label="Enviar solicitud"
+                      chromeColor="0x0000FF"
+                      color="0xFFFFFF" click="enviarSolicitud()"/>
+        </s:HGroup>
+    </s:controlBarContent>
+</s:TitleWindow>

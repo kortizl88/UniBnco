@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+                           xmlns:s="library://ns.adobe.com/flex/spark">
+    <fx:Script>
+        <![CDATA[
+        import mx.collections.ArrayCollection;
+
+        [Bindable]
+        private var _items:ArrayCollection;
+
+        public function get items():ArrayCollection {
+            return _items;
+        }
+
+        public function set items(value:ArrayCollection):void {
+            _items = value;
+        }
+
+        public function itemClickHandler(item:Object):void {
+            close(true, item);
+        }
+        ]]>
+    </fx:Script>
+    <s:Panel title="Reposiciones" borderAlpha="0.5" cornerRadius="10">
+        <s:layout>
+            <s:VerticalLayout padding="3"/>
+        </s:layout>
+        <s:List dataProvider="{_items}" width="100%" height="100%" borderVisible="false" preventSelection="true">
+            <s:layout>
+                <s:HorizontalLayout padding="5"/>
+            </s:layout>
+            <s:itemRenderer>
+                <fx:Component>
+                    <s:ItemRenderer autoDrawBackground="false" useHandCursor="true" buttonMode="true"
+                                    click="outerDocument.itemClickHandler(data)">
+                        <s:states>
+                            <s:State name="normal"/>
+                            <s:State name="hovered"/>
+                        </s:states>
+                        <s:transitions>
+                            <s:Transition fromState="normal" toState="hovered" autoReverse="true">
+                                <s:Animate target="{dropShadowFilter}" duration="250">
+                                    <s:SimpleMotionPath property="distance"/>
+                                </s:Animate>
+                            </s:Transition>
+                        </s:transitions>
+                        <s:Group top="15" left="0" bottom="0" right="0">
+                            <s:Rect top="0" left="0" bottom="0" right="0" radiusX="10" radiusY="10">
+                                <s:stroke>
+                                    <s:SolidColorStroke color="0xa9a9a9"/>
+                                </s:stroke>
+                                <s:fill>
+                                    <s:SolidColor color="#FFFFFF"/>
+                                </s:fill>
+                                <s:filters>
+                                    <s:DropShadowFilter id="dropShadowFilter" alpha="0.32" distance.normal="0"
+                                                        distance.hovered="4"/>
+                                </s:filters>
+                            </s:Rect>
+                        </s:Group>
+                        <s:Group top="15" left="0" bottom="0" right="0">
+                            <s:List id="imagenList"
+                                    preventSelection="true"
+                                    borderAlpha="0"
+                                    dataProvider="{data.imagenes}"
+                                    bottom="5" top="5" left="5" right="5">
+                                <s:layout>
+                                    <s:HorizontalLayout verticalAlign="middle" horizontalAlign="center"/>
+                                </s:layout>
+                                <s:itemRenderer>
+                                    <fx:Component>
+                                        <s:ItemRenderer autoDrawBackground="false">
+                                            <s:Image id="image" source="carrusel/{data}"
+                                                     width="100" height="100"
+                                                     fillMode="scale"
+                                                     horizontalAlign="center"
+                                                     verticalAlign="middle"
+                                                     smooth="true"/>
+                                        </s:ItemRenderer>
+                                    </fx:Component>
+                                </s:itemRenderer>
+                            </s:List>
+                        </s:Group>
+                        <s:Group top="0" left="0" right="0">
+                            <s:Label width="100%" text="{data.descripcion}" textAlign="center"/>
+                        </s:Group>
+                    </s:ItemRenderer>
+                </fx:Component>
+            </s:itemRenderer>
+        </s:List>
+        <s:controlBarContent>
+            <s:Spacer width="100%"/>
+            <s:Button label="Cancelar" click="close()"/>
+        </s:controlBarContent>
+    </s:Panel>
+</s:SkinnablePopUpContainer>

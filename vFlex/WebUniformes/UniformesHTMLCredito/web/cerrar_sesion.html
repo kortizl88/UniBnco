@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <link rel="stylesheet" type="text/css" href="./css/cerrar.css">
+
+    <title>{{ Cerrar Sesión }}</title>
+    <script type="text/javascript" language="JavaScript">
+        function delCookie(name, path, domain) {
+            var today = new Date();
+            var deleteDate = new Date(today.getTime() - 48 * 60 * 60 * 1000); // minus 2 days
+            var cookie = name + "="
+                    + ((path == null) ? "" : "; path=" + path)
+                    + ((domain == null) ? "" : "; domain=" + domain)
+                    + "; expires=" + deleteDate;
+            document.cookie = cookie;
+        }
+
+        function delOblixCookie() {
+            // set focus to ok button
+            var isNetscape = (document.layers);
+            if (isNetscape == false || navigator.appVersion.charAt(0) >= 5) {
+                for (var i = 0; i < document.links.length; i++) {
+                    if (document.links[i].href == "javascript:top.close()") {
+                        document.links[i].focus();
+                        break;
+                    }
+                }
+            }
+            delCookie('ObTEMC', '/');
+            delCookie('ObSSOCookie', '/');
+
+            // Added myCustomAppCookie deletion
+            delCookie('myCustomApp', '/');
+
+            // in case cookieDomain is configured
+            // delete same cookie from all subdomains
+            var subdomain;
+            var domain = new String(document.domain);
+            var index = domain.indexOf(".");
+            while (index > 0) {
+                subdomain = domain.substring(index, domain.length);
+                if (subdomain.indexOf(".", 1) > 0) {
+                    delCookie('ObTEMC', '/', subdomain);
+                    delCookie('ObSSOCookie', '/', subdomain);
+                }
+                domain = subdomain;
+                index = domain.indexOf(".", 1);
+            }
+        }
+    </script>
+</head>
+
+<body onload="delOblixCookie();">
+<div id="wrapper">
+    <div class="contenido">
+        <div class="header">
+            <img src="./img/logos/LogoAZF.png" width="302" height="101">
+            <h1>Sistema de Uniformes</h1>
+        </div><!-- de header  -->
+        <div class="info">
+            <img src="./img/Information.png" width="64" height="64">
+            <h2>Tu sesión ha sido cerrada <br> por razones de <b>seguridad</b> te recomendamos</h2>
+            <button class="btn btn-2 btn-2a"
+                    onclick="javascript:window.open(&#39;http://iportal.socio.gs/&#39;,&#39;_self&#39;);">Ir al Portal
+            </button>
+        </div> <!-- de info  -->
+        <div class="footer">
+            Grupo Salinas - Todos los derechos reservados 2014
+        </div><!--  de footer  -->
+    </div><!-- de contenido  -->
+</div><!-- de wrapper  -->
+
+
+</body>
+</html>

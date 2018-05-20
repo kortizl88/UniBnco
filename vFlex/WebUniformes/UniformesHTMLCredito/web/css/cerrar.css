@@ -1,0 +1,140 @@
+body {
+    width: 100%;
+    margin: 0 auto;
+    padding: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 100%;
+    background: #fff;
+    color: #3f3f3f;
+}
+
+img {
+    border: none;
+}
+
+.footer {
+    background: #fff;
+    float: left;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.8em;
+    line-height: 2.2;
+    height: 40px;
+    text-align: center;
+    margin: 30px 0 0 0;
+    width: 100%;
+}
+
+#wrapper {
+    width: 996px;
+    margin: 10px auto;
+    position: relative;
+}
+
+/* invisible para IE 5 \*/
+#wrapper {
+    position: absolute;
+    margin: -290px 0 0 -500px;
+    left: 50%;
+    top: 50%;
+}
+
+/* fin hack */
+.contenido {
+    background: #fff;
+    background-color: #FFF;
+    width: 996px;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+
+    -moz-box-shadow: 1px 2px 3px 2px #aeaeae;
+    -webkit-box-shadow: 1px 2px 3px 2px #aeaeae;
+    box-shadow: 1px 2px 3px 2px #aeaeae;
+    /* IE 8 */
+    -ms-filter: "progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#aeaeae')";
+    /* IE 5.5 - 7 */
+    filter: progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#aeaeae');
+}
+
+.info {
+    background: #f7f7f7;
+    border-bottom: 1px solid #ededed;
+    float: left;
+    text-align: center;
+    padding: 30px 0;
+    width: 100%;
+}
+
+.info h2 {
+    color: #5a5a5a;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 30px;
+    font-weight: normal;
+    margin-bottom: 50px;
+}
+
+.header {
+    float: left;
+    margin: 20px 0;
+    text-align: center;
+    width: 100%;
+}
+
+.header h1 {
+    display: block;
+    color: #6c6c6c;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 50px;
+    font-weight: normal;
+    float: left;
+    height: 85px;
+    line-height: 2;
+    padding: 0 0 0 50px;
+    margin: 0;
+}
+
+.header img {
+    display: block;
+    float: left;
+    margin-left: 40px;
+}
+
+/* General button style (reset) */
+.btn {
+    border: none;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.2em;
+    color: #ccc;
+    background: inherit;
+    cursor: pointer;
+    padding: 8px 10px;
+    display: inline-block;
+    margin: 4px 6px;
+    outline: none;
+    position: relative;
+    -webkit-transition: all 0.3s;
+    -moz-transition: all 0.3s;
+    transition: all 0.3s;
+}
+
+.btn:after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    -webkit-transition: all 0.3s;
+    -moz-transition: all 0.3s;
+    transition: all 0.3s;
+}
+
+/* Button 2  verde*/
+.btn-2 {
+    background: #45af1e;
+    color: #fff;
+    width: 220px;
+}
+
+.btn-2a:hover,
+.btn-2a:active {
+    color: #fff;
+    background: #368917;
+}

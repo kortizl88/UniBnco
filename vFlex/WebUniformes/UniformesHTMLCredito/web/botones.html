@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="jquery-mobile/jquery.mobile.icons-1.4.5.css">
+    <link rel="stylesheet" href="jquery-mobile/theme-classic.css">
+    <link rel="stylesheet" href="jquery-mobile/jquery.mobile.structure-1.4.5.css">
+    <link rel="stylesheet" href="css/tooltipAzul.css">
+    <link rel="stylesheet" href="css/botones.css">
+
+    <script src="jquery/jquery-2.1.4.min.js"></script>
+    <script src="jquery-mobile/jquery.mobile-1.4.5.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/botones.js"></script>
+    <title></title>
+</head>
+<body>
+<div id="divPage" data-role="page" data-theme="c">
+    <div id="divButtons">
+        <div class="ui-grid-a">
+            <div class="ui-block-a">
+                <button id="solicitudButton" class="ui-btn ui-btn-inline ui-corner-all" rel="tooltip"
+                        title="Solicita tu uniforme">
+                    <img src="img/solicita_aqui_uniforme_big.png">
+                </button>
+            </div>
+            <div class="ui-block-b">
+                <button id="estatusButton" class="ui-btn ui-btn-inline ui-corner-all" rel="tooltip"
+                        title="Revisa el estatus de tu uniforme">
+                    <img src="img/estatus_uniforme_big.png">
+                </button>
+            </div>
+        </div>
+        <div class="ui-grid-solo">
+            <div class="ui-block-a">
+                <button id="descuentosButton" class="ui-btn ui-btn-inline ui-corner-all" rel="tooltip"
+                        title="Revisa los pagos que has hecho de tu uniforme">
+                    <img src="img/uniforme_descuento_big.png">
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="msgInicioPopup" data-role="popup" data-dismissible="false">
+        <div id="tituloMsgInicio" class="tituloPopup" data-role="header">
+
+        </div>
+        <div id="divMsgInicio" data-role="main" class="ui-content">
+
+        </div>
+        <div data-role="footer" class="popupControlbar">
+            <a href="#" data-rel="back" id="btnAceptarMsgInicio" class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+               data-transition="flow">Aceptar</a>
+        </div>
+    </div>
+    <div id="popupReposicionAutorizada" data-role="popup" data-dismissible="false">
+        <div id="titReposicionAutorizada" class="tituloPopup" data-role="header">
+
+        </div>
+        <div id="msgReposicionAutorizada" data-role="main" class="ui-content">
+
+        </div>
+        <div data-role="footer" class="popupControlbar">
+            <a href="#" data-rel="back" id="btnSi" class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+               data-transition="flow">Si</a>
+            <a href="#" data-rel="back" id="btnNo" class="ui-btn ui-corner-all ui-btn-inline"
+               data-transition="flow">No</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

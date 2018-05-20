@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Com.Elektra.Uniformes.map.DescuentosMap">
+    <resultMap id="foliosResultMap" type="Com.Elektra.Uniformes.Dto.FolioDto">
+        <result column="FOLIOPED" property="folio"/>
+        <result column="FECHA" property="fecha"/>
+    </resultMap>
+
+    <resultMap id="empleadoDesctoResultMap" type="Com.Elektra.Uniformes.Dto.EmpleadoDesctoDto">
+        <result column="ANIODESCTO" property="aniodescto"/>
+        <result column="CCNOM" property="ccnom"/>
+        <result column="EMPID" property="emplid"/>
+        <result column="FECHPAGO" property="fecpago"/>
+        <result column="REFE" property="refe"/>
+        <result column="SALDO" property="saldo"/>
+        <result column="SEMANADESC" property="semdescto"/>
+        <result column="SOCIEDAD" property="soc"/>
+        <result column="TOTDESC" property="totdesc"/>
+        <result column="DESCGRAL" property="descGral" typeHandler="Com.Elektra.Uniformes.map.DescGralTypeHandler"/>
+        <result column="FNPAGO" property="pago"/>
+        <result column="PERIODOS" property="periodos"/>
+    </resultMap>
+
+    <select id="consultaEmpleadoDescto"
+            parameterType="map"
+            statementType="CALLABLE">
+        {CALL #{result.list, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=empleadoDesctoResultMap}
+        :=
+        RHEKT.PAWEBUNIFORMES.FNOBTIENEDESC(
+        #{idEmpleado, mode=IN, jdbcType=INTEGER},
+        #{folioPedido, mode=IN, jdbcType=VARCHAR}
+        )}
+    </select>
+
+    <select id="getFolios"
+            parameterType="map"
+            statementType="CALLABLE">
+        {CALL #{result.list, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=foliosResultMap} :=
+        RHEKT.PAWEBUNIFORMES.FNOBTIENEFOLIOS(
+        #{idEmpleado, mode=IN, jdbcType=INTEGER}
+        )}
+    </select>
+
+</mapper>

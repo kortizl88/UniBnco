@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Com.Elektra.Uniformes.map.EncuestaMap">
+
+    <resultMap id="EncuestaResultMap" type="Com.Elektra.Uniformes.Dto.EncuestaDto">
+        <result property="idEmpleado" column="FIIDEMPLEADO"/>
+        <result property="idEncuesta" column="FIIDENCUESTA"/>
+        <result property="titulo" column="FCTITULO"/>
+        <result property="descripcion" column="FCDESCRIPCION"/>
+        <result property="vigencia" column="FDVIGENCIA"/>
+        <result property="registro" column="ENCREGISTRO"/>
+        <result property="region" column="FCREGION"/>
+        <result property="idSucursal" column="FISUCURSALID"/>
+        <result property="sucursal" column="FCSUCURSAL"/>
+        <collection property="preguntas" ofType="Com.Elektra.Uniformes.Dto.PreguntaDto">
+            <result property="idPregunta" column="FIIDPREGUNTA"/>
+            <result property="orden" column="PREGORDEN"/>
+            <result property="texto" column="PREGTEXTO"/>
+            <result property="registro" column="PREGREGISTRO"/>
+            <collection property="respuestas" ofType="Com.Elektra.Uniformes.Dto.RespuestaDto">
+                <result property="idRespuesta" column="FIIDRESPUESTA"/>
+                <result property="orden" column="RESPORDEN"/>
+                <result property="texto" column="RESPTEXTO"/>
+                <result property="registro" column="RESPREGISTRO"/>
+            </collection>
+        </collection>
+    </resultMap>
+
+    <select id="consultaEncuestaPendiente" parameterType="map" statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPCONSULTAENCUESTA(
+        #{idEmpleado, mode=IN, jdbcType=INTEGER},
+        #{result.list, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=EncuestaResultMap}
+        )}
+    </select>
+
+    <insert id="guardaRespuesta" parameterType="map" statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPGUARDARESPUESTA(
+        #{idEmpleado, mode=IN, jdbcType=INTEGER},
+        #{idEncuesta, mode=IN, jdbcType=INTEGER},
+        #{idPregunta, mode=IN, jdbcType=INTEGER},
+        #{idRespuesta, mode=IN, jdbcType=INTEGER}
+        )}
+    </insert>
+
+    <insert id="finalizaEncuesta" parameterType="Com.Elektra.Uniformes.Dto.EncuestaDto" statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPFINALIZAENCUESTA(
+        #{idEmpleado, mode=IN, jdbcType=INTEGER},
+        #{idEncuesta, mode=IN, jdbcType=INTEGER},
+        #{comentarios, mode=IN, jdbcType=VARCHAR}
+        )}
+    </insert>
+</mapper>

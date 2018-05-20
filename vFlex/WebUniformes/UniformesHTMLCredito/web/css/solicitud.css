@@ -1,0 +1,323 @@
+.scroll-wrapper {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+    width: 500px;
+    height: 350px;
+}
+
+#listaTiendas tr:hover {
+    background-color: #ADD8E6;
+    cursor: hand;
+}
+
+#divCarrusel {
+    background: -webkit-linear-gradient(#b4b4b4, #404040);
+    background: -o-linear-gradient(#b4b4b4, #404040);
+    background: -moz-linear-gradient(#b4b4b4, #404040);
+    background: linear-gradient(#b4b4b4, #404040);
+    text-align: center;
+    min-height: 170px;
+    display: flex;
+    display: -webkit-flex;
+    flex-direction: row;
+    -webkit-flex-direction: row;
+    justify-content: center;
+    -webkit-justify-content: center;
+    -webkit-overflow-scrolling: touch;
+    overflow-x: auto;
+}
+
+.divItem {
+    position: relative;
+    flex: 0 0 auto;
+    -webkit-flex: 0 0 auto;
+}
+
+#mensajeWindow {
+    max-width: 500px;
+}
+
+#dialog_label {
+    padding: 10px;
+}
+
+#mensaje {
+    padding-bottom: 10px;
+}
+
+#divFooterMensaje {
+    text-align: center;
+}
+
+#divPopupMsgVal {
+    max-width: 500px;
+}
+
+#divTituloMsgVal {
+    padding: 10px;
+}
+
+#divMsgVal {
+    padding-bottom: 10px;
+}
+
+#divFooterMsgVal {
+    text-align: center;
+}
+
+#divHeader {
+    visibility: hidden;
+}
+
+#divTiendaReceptora {
+    width: 100%;
+    text-align: center;
+}
+
+#divTiendaLbl {
+    display: inline;
+}
+
+#divSolicitudItems {
+    position: absolute;
+    top: 48px;
+    bottom: 48px;
+    left: 0;
+    right: 0;
+    visibility: hidden;
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+}
+
+#popupTiendas {
+    padding: 10px;
+}
+
+#popupConfirmaSolicitud {
+    padding: 10px;
+}
+
+#divFooter {
+    text-align: right;
+    visibility: hidden;
+}
+
+#divTotal {
+    display: inline;
+}
+
+#guiaScroll {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+}
+
+#imgGuia {
+    width: 100%;
+    max-width: 1000px;
+}
+
+.dispInline, .dispInlineLabel {
+    display: inline-block;
+    border-bottom-width: 0;
+}
+
+.dispInlineLabel {
+    min-width: 150px;
+}
+
+.dispInline {
+    min-width: 330px;
+}
+
+.clearFloats {
+    clear: both;
+}
+
+.tituloPopup {
+    padding: 10px;
+}
+
+.popupControlbar {
+    text-align: center;
+}
+
+.cabecero {
+    background: -webkit-linear-gradient(#E2E2E2, #D9D9D9);
+    background: -o-linear-gradient(#E2E2E2, #D9D9D9);
+    background: -moz-linear-gradient(#E2E2E2, #D9D9D9);
+    background: linear-gradient(#E2E2E2, #D9D9D9);
+    height: 20px;
+    width: 100%;
+    border-bottom: 1px #C0C0C0;
+    padding-top: 1px;
+    font-weight: bold;
+}
+
+.cabecero div {
+    padding-left: 9px;
+}
+
+.itemSeleccionado {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    display: -webkit-flex;
+    -webkit-flex-direction: row;
+}
+
+.itemSeleccionadoImg {
+    width: 25%;
+    text-align: center;
+}
+
+.itemSeleccionadoImg img {
+    height: 74px;
+}
+
+.itemSeleccionadoDatos {
+    width: 30%;
+}
+
+.datosLbl {
+    font-weight: bold;
+    text-align: right;
+}
+
+.seleccionTalla {
+    width: 25%;
+}
+
+.seleccionTalla label {
+    font-weight: bold;
+}
+
+.eliminarItem {
+    width: 20%;
+    text-align: right;
+    padding-right: 5px;
+}
+
+.eliminarItem a {
+    margin: 0;
+}
+
+.descripcionItem {
+    max-height: 20px;
+    padding: 3px 32px;
+}
+
+.itemWrapper {
+    background: #ffffff;
+    height: 130px;
+    margin: 0 10px;
+    border-radius: 10px;
+    padding: 3px;
+    min-width: 170px;
+}
+
+.imgCarrusel {
+    width: 100px;
+    height: 100%;
+    display: inline-block;
+    vertical-align: middle;
+    object-fit: contain;
+}
+
+.motivo {
+    position: absolute;
+    top: 20px;
+    bottom: 0;
+    left: 15px;
+    right: 15px;
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+    font-weight: bold;
+}
+
+.totalLbl {
+    text-align: right;
+}
+
+#resumenSolicitud {
+    border-collapse: collapse;
+}
+
+#totalRow td {
+    border-top: double;
+    font-weight: bold;
+}
+
+#pedidoGrabadoPopup,
+#mensajeWindow,
+#msgReposicionPopup,
+#msgCategoriaPopup {
+    width: 550px;
+}
+
+#divFooter {
+    bottom: 0;
+    right: 0;
+    left: 0;
+    top: auto ! important;
+    position: fixed !important;
+}
+
+#tooltip {
+    font-family: Ubuntu, sans-serif;
+    font-weight: bold;
+    font-size: 0.875em;
+    text-align: center;
+    text-shadow: 0 1px rgba(0, 0, 0, .5);
+    line-height: 1.5;
+    color: #fff;
+    background: #333;
+    background: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 0, 0, .6)), to(rgba(255, 0, 0, .8)));
+    background: -webkit-linear-gradient(top, rgba(255, 0, 0, .6), rgba(255, 0, 0, .8));
+    background: -moz-linear-gradient(top, rgba(255, 0, 0, .6), rgba(255, 0, 0, .8));
+    background: -o-linear-gradient(top, rgba(255, 0, 0, .6), rgba(255, 0, 0, .8));
+    background: linear-gradient(top, rgba(255, 0, 0, .6), rgba(255, 0, 0, .8));
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    border-top: 1px solid #f00;
+    -webkit-box-shadow: 0 3px 5px rgba(0, 0, 0, .3);
+    -moz-box-shadow: 0 3px 5px rgba(0, 0, 0, .3);
+    box-shadow: 0 3px 5px rgba(0, 0, 0, .3);
+    position: absolute;
+    z-index: 2000;
+    padding: 10px;
+}
+
+#tooltip:after {
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid #FF0000;
+    border-top-color: rgba(255, 0, 0, .7);
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -10px;
+    margin-left: -10px;
+}
+
+#tooltip.top:after {
+    border-top-color: transparent;
+    border-bottom: 10px solid #FF0000;
+    border-bottom-color: rgba(255, 0, 0, .6);
+    top: -20px;
+    bottom: auto;
+}
+
+#tooltip.left:after {
+    left: 10px;
+    margin: 0;
+}
+
+#tooltip.right:after {
+    right: 10px;
+    left: auto;
+    margin: 0;
+}

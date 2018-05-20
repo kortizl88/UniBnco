@@ -1,0 +1,846 @@
+<?xml version="1.0"?>
+<containers:UniformesPanel xmlns:fx="http://ns.adobe.com/mxml/2009"
+                           xmlns:s="library://ns.adobe.com/flex/spark"
+                           xmlns:containers="containers.*"
+                           xmlns:assets="assets.*"
+                           xmlns:comp="components.*" xmlns:mx="library://ns.adobe.com/flex/mx"
+                           skinClass="skins.MainPanelSkin"
+                           creationComplete="creationCompleteHandler()">
+    <fx:Metadata>
+        [ResourceBundle("message_bundle")]
+    </fx:Metadata>
+
+    <fx:Declarations>
+
+        <mx:RemoteObject id="consultaEmpleado"
+                         destination="consultaEmpleado"
+                         channelSet="{ROUtil.channelSet}">
+            <mx:method name="consultaEmpleadoDatos"
+                       result="consultaInfoEmpleadoHandler(event)"
+                       fault="consultaInfoEmpleadoFaultHandler(event)"/>
+            <mx:method name="confirmaNotificacion"
+                       result="MensajeUtil.validaServiceResponse(event)"
+                       fault="MensajeUtil.mostrarMensajeFault(event)"/>
+            <mx:method name="consultaCargaActiva"
+                       result="consultaCargaActivaResultHandler(event)"
+                       fault="consultaCargaActivaFaultandler(event)"/>
+        </mx:RemoteObject>
+
+        <mx:RemoteObject id="posicionAyuda"
+                         destination="posicionAyuda"
+                         channelSet="{ROUtil.channelSet}"
+                         result="posicionAyudaHandler(event)"/>
+
+        <mx:RemoteObject id="solicitudesExternas"
+                         destination="solicitudesExternas"
+                         channelSet="{ROUtil.channelSet}"
+                         result="MensajeUtil.validaServiceResponse(event)"
+                         fault="MensajeUtil.mostrarMensajeFault(event)"/>
+
+        <mx:RemoteObject id="configuracionService"
+                         destination="configuracionService"
+                         channelSet="{ROUtil.channelSet}"
+                         result="obtenerConfiguracionResultHandler(event)"
+                         fault="obtenerConfiguracionFaultHandler(event)"/>
+
+        <s:Fade id="fadeIn" alphaFrom="0" alphaTo="1"/>
+
+        <s:Parallel id="entraVentanaEffect"
+                    effectEnd="{entraVentanaEffectEnd()}">
+            <s:Fade alphaFrom="0"
+                    alphaTo="1"/>
+            <s:Move3D xFrom="1000" xTo="0"/>
+        </s:Parallel>
+
+
+        <s:Parallel id="effectOut"
+                    effectEnd="showNewIndex(event)">
+            <s:Fade alphaFrom="1"
+                    alphaTo="0"/>
+            <s:Move3D xBy="1000"/>
+        </s:Parallel>
+
+        <s:Sequence id="cierraVentanaEffect">
+            <s:Parallel>
+                <s:Fade alphaFrom="1"
+                        alphaTo="0"/>
+                <s:Move3D xBy="1000"/>
+            </s:Parallel>
+            <s:SetAction property="visible" value="false"/>
+        </s:Sequence>
+
+        <s:Sine id="sineEasing"
+                easeInFraction="0.3"/>
+
+        <s:Sequence id="menuAnimation" effectEnd="finalizaReposicionMenu(event)">
+            <s:Parallel duration="500">
+                <s:Move3D id="solicitudMove3D" target="{solicitudBigButton}" easer="{sineEasing}"/>
+                <s:Resize id="solicitudResize" target="{solicitudBigButton}"/>
+                <s:Move3D id="estatusMove3D" target="{estatusBigButton}" easer="{sineEasing}"/>
+                <s:Resize id="estatusResize" target="{estatusBigButton}"/>
+            </s:Parallel>
+            <s:Parallel duration="500">
+                <s:Move3D id="desctosMove3D" target="{desctosBigButton}" easer="{sineEasing}"/>
+                <s:Resize id="desctosResize" target="{desctosBigButton}"/>
+                <s:Move3D id="entregaMove3D" target="{entregaBigButton}" easer="{sineEasing}"/>
+                <s:Resize id="entregaResize" target="{entregaBigButton}"/>
+            </s:Parallel>
+        </s:Sequence>
+
+        <comp:PoliticasTitleWindow id="politicasTitleWindow" width="100%" height="100%"
+                                   flagPoliticasAceptadas="{politicasAceptadas}"
+                                   addedEffect="{entraVentanaEffect}"/>
+
+        <comp:SolicitudTitleWindow id="solicitudTitleWindow" width="100%" height="100%"
+                                   addedEffect="{entraVentanaEffect}"/>
+
+        <comp:EstatusSolicitudTitleWindow id="estatusTitleWindow" width="100%" height="100%"
+                                          addedEffect="{entraVentanaEffect}"/>
+
+        <comp:DescuentosTitleWindow id="descuentosTitleWindow" width="100%" height="100%"
+                                    addedEffect="{entraVentanaEffect}"/>
+
+        <comp:EntregaDeUniforme id="entregaTitleWindow" width="100%" height="100%"
+                                addedEffect="{entraVentanaEffect}"/>
+
+        <s:VGroup width="100%" height="100%" id="bigButtonsGroup" creationComplete="consultaPosicionAyuda()"
+                  addedEffect="{fadeIn}">
+            <s:HGroup width="100%" height="50%">
+                <s:HGroup width="50%" height="100%" horizontalAlign="center" verticalAlign="middle">
+                    <s:ToggleButton id="solicitudBigButton" width="60%" height="50%"
+                                    click="moverBotones(INDEX_SOLICITUD)"
+                                    cornerRadius="5" skinClass="skins.ToggleButtonSkin"
+                                    icon="@Embed(source='/resources/solicita_aqui_uniforme_big.png')"/>
+                </s:HGroup>
+                <s:HGroup width="50%" height="100%" horizontalAlign="center" verticalAlign="middle">
+                    <s:ToggleButton id="estatusBigButton" width="60%" height="50%"
+                                    click="moverBotones(INDEX_ESTATUS)"
+                                    cornerRadius="5"
+                                    skinClass="skins.ToggleButtonSkin"
+                                    icon="@Embed(source='/resources/estatus_uniforme_big.png')"/>
+                </s:HGroup>
+            </s:HGroup>
+            <s:HGroup width="100%" height="50%" horizontalAlign="center" verticalAlign="middle">
+                <s:HGroup width="50%" height="100%" horizontalAlign="center" verticalAlign="middle">
+                    <s:ToggleButton id="desctosBigButton" width="60%" height="50%"
+                                    click="moverBotones(INDEX_DESCTOS)"
+                                    cornerRadius="5"
+                                    skinClass="skins.ToggleButtonSkin"
+                                    icon="@Embed(source='/resources/uniforme_descuento_big.png')"/>
+                </s:HGroup>
+                <s:HGroup width="50%" height="100%" horizontalAlign="center" verticalAlign="middle"
+                          visible="{flagEntrega}"
+                          includeInLayout="{flagEntrega}">
+                    <s:ToggleButton id="entregaBigButton" width="60%" height="50%"
+                                    click="moverBotones(INDEX_ENTREGA)"
+                                    cornerRadius="5"
+                                    skinClass="skins.ToggleButtonSkin"
+                                    icon="@Embed(source='/resources/entrega_uniformes_big.png')"/>
+                </s:HGroup>
+            </s:HGroup>
+        </s:VGroup>
+
+
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import model.EncuestaDto;
+
+        import mx.collections.ArrayCollection;
+        import mx.collections.ArrayList;
+        import mx.controls.ToolTip;
+        import mx.core.FlexGlobals;
+        import mx.core.IFlexDisplayObject;
+        import mx.core.UIComponent;
+        import mx.events.CloseEvent;
+        import mx.events.EffectEvent;
+        import mx.managers.PopUpManager;
+        import mx.managers.ToolTipManager;
+        import mx.rpc.events.FaultEvent;
+        import mx.rpc.events.ResultEvent;
+        import mx.utils.StringUtil;
+
+        import spark.components.TitleWindow;
+        import spark.components.supportClasses.ButtonBase;
+        import spark.events.IndexChangeEvent;
+
+        import utils.MensajeUtil;
+        import utils.ROUtil;
+        import utils.StringUtils;
+
+        private static const INDEX_POLITICA:int = 1;
+        private static const INDEX_SOLICITUD:int = 2;
+        private static const INDEX_ESTATUS:int = 3;
+        private static const INDEX_DESCTOS:int = 4;
+        private static const INDEX_ENTREGA:int = 5;
+        private static const INDEX_BOTONES:int = 6;
+
+        private var numEmpleado:Number;
+
+
+        private var nombreEmpleado:String;
+
+        private var puesto:String;
+
+        private var funcion:Number;
+
+        private var infoEmpleado:Object;
+
+        private var idGenero:Number;
+        private var pais:Number;
+
+        [Bindable]
+        private var politicasAceptadas:Boolean = false;
+
+        [Bindable]
+        private var flagEntrega:Boolean;
+
+        private var flagMenuPosicionFinal:Boolean = false;
+
+        private var manualImagen:ArrayCollection;
+
+        private var tip:ToolTip;
+        private var imgCanal:Object = {
+            1: "logoElektra.png",
+            2: "logoSyr.png",
+            3: "logoCdt.png",
+            4: "logoDek.png",
+            5: "logoNeto.png",
+            6: "logoCredito.png",
+            7: "logoRemates.png",
+            8: "logoPp.png",
+            9: "logoEkm.png",
+            10: "logoPcj.png",
+            99: "logoServFinAzteca.png"
+        };
+
+        private var currentButton:ToggleButton;
+        private var nextIndex:int;
+
+        private var requestPendientes:int;
+
+        private var mensajes:ArrayList = new ArrayList();
+
+        private var encuestaPanel:Encuesta;
+
+        private var capturaTallas:CapturaTallasWindow;
+        private var cargaActiva:Object;
+
+        private function creationCompleteHandler():void {
+            this.addEventListener("showPoliticas", showPoliticasListener);
+            requestPendientes = 2;
+            numEmpleado = FlexGlobals.topLevelApplication.parameters.idEmpleado;
+            consultaEmpleado.consultaEmpleadoDatos(numEmpleado);
+            var sucursal:int = FlexGlobals.topLevelApplication.parameters.sucursal;
+            var canal:int = FlexGlobals.topLevelApplication.parameters.canal;
+            var pais:int = FlexGlobals.topLevelApplication.parameters.pais;
+            configuracionService.obtenerConfiguracion(sucursal, canal, pais);
+        }
+
+        private function consultaInfoEmpleadoHandler(e:ResultEvent):void {
+            validateAndRemoveSpinner();
+            if (!MensajeUtil.validaServiceResponse(e)) {
+                return;
+            }
+            infoEmpleadoGroup.visible = true;
+            mensajeLabel.text = "";
+            var datosEmpleado:Object = e.result.datosEmpleado;
+            numEmpleado = datosEmpleado.fiEmpleadoNum;
+            nombreEmpleado = StringUtils.capitalize(datosEmpleado.fcEmpleadoNombre);
+            puesto = StringUtils.capitalize(datosEmpleado.fcPosicionDesc);
+            funcion = datosEmpleado.fnFuncionNum;
+            idGenero = datosEmpleado.sexo;
+            pais = datosEmpleado.pais;
+            flagEntrega = datosEmpleado.flagEntrega;
+
+            if (datosEmpleado.canal.length > 1) {
+                seleccionNegocio.visible = true;
+                seleccionNegocio.includeInLayout = true;
+            }
+
+            var canal:Object = datosEmpleado.canal.getItemAt(0);
+            if (imgCanal.hasOwnProperty(canal.id)) {
+                canalImage.source = "img/logos/" + imgCanal[canal.id];
+            } else {
+                canalImage.source = "img/logos/" + imgCanal[99];
+            }
+
+            nombreLbl.text = nombreEmpleado + " (" + numEmpleado + ")";
+            puestoLbl.text = funcion + " - " + puesto;
+
+            seleccionNegocio.dataProvider = datosEmpleado.canal;
+            seleccionNegocio.selectedIndex = 0;
+
+            manualImagen = datosEmpleado.manualDeImagen;
+
+            if (datosEmpleado.mensajesInicio != null) {
+                for each(var mensaje:String in datosEmpleado.mensajesInicio) {
+                    this.mensajes.addItem({
+                        titulo: '',
+                        msg: resourceManager.getString('message_bundle', mensaje),
+                        lvl: MensajeWindow.LEVEL_INFO,
+                        flags: MensajeWindow.OK,
+                        func: mostrarSiguienteMensaje
+                    });
+                }
+            }
+
+            for each(var rep:Object in e.result.reposiciones) {
+                var titulo:String = "Reposición de herramienta de trabajo";
+                var msg:String;
+                var lvl:int;
+                var flags:uint;
+                var funcion:Function;
+                if (rep.estatus == 10) {
+                    msg = StringUtil.substitute(
+                            "<p><b>Tu solicitud de reposicion de {0} con folio {1} será atendida a la brevedad.</b></p>",
+                            rep.descripcionCorta,
+                            rep.folioReposicion);
+                    lvl = MensajeWindow.LEVEL_INFO;
+                    flags = MensajeWindow.OK;
+                    funcion = mostrarSiguienteMensaje;
+
+                }
+                if (rep.estatus == 20) {
+                    msg = StringUtil.substitute(
+                            "<p><b>Tu solicitud de reposicion de {0} con folio {1} fue autorizada con costo.</b></p>" +
+                            "<p>Comentario del autorizante: {2}</p>" +
+                            "<p>¿Deseas realizar tu solicitud?</p>",
+                            rep.descripcionCorta,
+                            rep.folioReposicion,
+                            rep.observaciones
+                    );
+                    lvl = MensajeWindow.LEVEL_QUESTION;
+                    flags = MensajeWindow.YES | MensajeWindow.NO;
+                    funcion = validaRespuesta;
+
+                }
+                if (rep.estatus == 30) {
+                    msg = StringUtil.substitute(
+                            "<p><b>Tu solicitud de reposicion de {0} con folio {1} fue autorizada sin costo.</b></p>" +
+                            "<p>Comentario del autorizante: {2}</p>" +
+                            "<p>¿Deseas realizar tu solicitud?</p>",
+                            rep.descripcionCorta,
+                            rep.folioReposicion,
+                            rep.observaciones
+                    );
+                    lvl = MensajeWindow.LEVEL_QUESTION;
+                    flags = MensajeWindow.YES | MensajeWindow.NO;
+                    funcion = validaRespuesta;
+                }
+                if (rep.estatus == 50) {
+                    msg = StringUtil.substitute(
+                            "<p><b>Tu solicitud de reposicion de {0} con folio {1} fue rechazada.</b></p>" +
+                            "<p>Comentario del regional: {2}</p>",
+                            rep.descripcionCorta,
+                            rep.folioReposicion,
+                            rep.observaciones
+                    );
+                    lvl = MensajeWindow.LEVEL_INFO;
+                    flags = MensajeWindow.OK;
+                    funcion = (function (folio:Number):Function {
+                        return function (evt:CloseEvent):void {
+                            consultaEmpleado.confirmaNotificacion(folio);
+                            mostrarSiguienteMensaje();
+                        }
+                    })(rep.folioReposicion);
+                }
+                this.mensajes.addItem({
+                    titulo: titulo,
+                    msg: msg,
+                    lvl: lvl,
+                    flags: flags,
+                    func: funcion
+                });
+            }
+            inicializaVentanas();
+            showPoliticas();
+            if (e.result.encuesta != null) {
+                mostrarEncuesta(e.result.encuesta);
+            }
+            consultaCargaActiva();
+        }
+
+        private function mostrarEncuesta(encuesta:EncuestaDto):void {
+            encuestaPanel = Encuesta(PopUpManager.createPopUp(DisplayObject(FlexGlobals.topLevelApplication), Encuesta, true));
+            encuestaPanel.title = encuesta.titulo;
+            encuestaPanel.nombre = nombreEmpleado;
+            encuestaPanel.puesto = puesto;
+            encuestaPanel.encuesta = encuesta;
+            encuestaPanel.addEventListener(CloseEvent.CLOSE, cerrarPopUp);
+            PopUpManager.centerPopUp(encuestaPanel);
+        }
+
+        private function validaRespuesta(event:CloseEvent):void {
+            if (event.detail == MensajeWindow.YES) {
+                buttonBar.visible = true;
+                politicasImage.visible = true;
+                cambiarVentana(INDEX_SOLICITUD);
+            } else {
+                mostrarSiguienteMensaje();
+            }
+        }
+
+        private function inicializaVentanas():void {
+            inicializaVentana(solicitudTitleWindow);
+            inicializaVentana(estatusTitleWindow);
+            inicializaVentana(descuentosTitleWindow);
+            inicializaVentana(entregaTitleWindow);
+            solicitudTitleWindow.addEventListener("solicitudGenerada", abrirEstatusDeMiSolicitud);
+        }
+
+        private function inicializaVentana(ventana:TitleWindow):void {
+            if (ventana.hasOwnProperty('idCanal')) {
+                ventana['idCanal'] = seleccionNegocio.selectedItem.id;
+            }
+            if (ventana.hasOwnProperty('canal')) {
+                ventana['canal'] = seleccionNegocio.selectedItem.descripcion;
+            }
+            if (ventana.hasOwnProperty('idEmpleado')) {
+                ventana['idEmpleado'] = this.numEmpleado;
+            }
+            if (ventana.hasOwnProperty('nombreEmpleado')) {
+                ventana['nombreEmpleado'] = this.nombreEmpleado;
+            }
+            if (ventana.hasOwnProperty('idFuncion')) {
+                ventana['idFuncion'] = this.funcion;
+            }
+            if (ventana.hasOwnProperty('nombreFuncion')) {
+                ventana['nombreFuncion'] = this.puesto;
+            }
+            if (ventana.hasOwnProperty('idGenero')) {
+                ventana['idGenero'] = this.idGenero;
+            }
+            if (ventana.hasOwnProperty('pais')) {
+                ventana['pais'] = this.pais;
+            }
+            if (ventana.hasOwnProperty('flagManualImagen')) {
+                ventana['flagManualImagen'] = manualImagen != null && manualImagen.length > 0;
+            }
+            ventana.addEventListener(CloseEvent.CLOSE, cerrarVentana);
+            ventana.addEventListener("manualDeImagen", showManualImagen);
+        }
+
+        private function consultaInfoEmpleadoFaultHandler(e:FaultEvent):void {
+            validateAndRemoveSpinner();
+            MensajeUtil.mostrarMensajeFault(e);
+        }
+
+        private function mostrarError(descripcionOperacion:String):void {
+            mensajeLabel.text = descripcionOperacion;
+        }
+
+        private function showPoliticasListener(event:Event):void {
+            cambiarVentana(1);
+        }
+
+        private function cambiarVentana(index:int, event:MouseEvent = null):void {
+            desactivaBotones();
+            if (currentButton != null) {
+                currentButton.selected = false;
+            }
+            if (event != null && event.target is ToggleButton) {
+                currentButton = event.target as ToggleButton;
+                currentButton.selected = true;
+            }
+            quitarToolTip();
+            this.nextIndex = index;
+            effectOut.play([contenido.getElementAt(0)]);
+        }
+
+
+        private function politicasAceptadasHandler(event:Event):void {
+            politicasAceptadas = true;
+            canalImage.visible = true;
+            politicasLabel.visible = false;
+            politicasLabel.includeInLayout = false;
+            mostrarSiguienteMensaje();
+        }
+
+        private function mostrarSiguienteMensaje(event:Event = null):void {
+            if (mensajes.length > 0) {
+                var sig:Object = mensajes.removeItemAt(0);
+                MensajeWindow.show(sig.msg, sig.titulo, sig.lvl, sig.flags, sig.func);
+            } else {
+                this.nextIndex = INDEX_BOTONES;
+                effectOut.play([contenido.getElementAt(0)]);
+            }
+        }
+
+        private function showNewIndex(event:EffectEvent = null):void {
+            contenido.removeElementAt(0);
+            switch (nextIndex) {
+                case INDEX_BOTONES:
+                    contenido.addElementAt(bigButtonsGroup, 0);
+                    break;
+                case INDEX_POLITICA:
+                    contenido.addElementAt(politicasTitleWindow, 0);
+                    break;
+                case INDEX_SOLICITUD:
+                    contenido.addElementAt(solicitudTitleWindow, 0);
+                    solicitudTitleWindow.iniciaConsultas();
+                    break;
+                case INDEX_ESTATUS:
+                    contenido.addElementAt(estatusTitleWindow, 0);
+                    estatusTitleWindow.consultaHistorialFolios();
+                    break;
+                case INDEX_DESCTOS:
+                    contenido.addElementAt(descuentosTitleWindow, 0);
+                    descuentosTitleWindow.consultaFolio();
+                    break;
+                case INDEX_ENTREGA:
+                    contenido.addElementAt(entregaTitleWindow, 0);
+                    entregaTitleWindow.consultarPedidos();
+                    break;
+            }
+        }
+
+        private function abrirEstatusDeMiSolicitud(event:Event):void {
+            estatusButton.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+        }
+
+        private function desactivaBotones():void {
+            buttonBar.enabled = false;
+            politicasImage.enabled = false;
+        }
+
+        private function quitarToolTip():void {
+            FlexGlobals.topLevelApplication.dispatchEvent(new Event("quitarToolTips", true));
+            if (tip != null) {
+                ToolTipManager.destroyToolTip(tip);
+                tip = null;
+            }
+        }
+
+        private function cerrarVentana(event:CloseEvent):void {
+            if (currentButton != null) {
+                currentButton.selected = false;
+                currentButton = null;
+            }
+            cierraVentanaEffect.play([event.target]);
+        }
+
+        private function consultaPosicionAyuda():void {
+            posicionAyuda.consultaPosicionAyuda(numEmpleado);
+        }
+
+        private function posicionAyudaHandler(e:ResultEvent):void {
+            quitarToolTip();
+            if (!MensajeUtil.validaServiceResponse(e)) {
+                return;
+            }
+            var posicion:String = e.result.posicion;
+            var target:ButtonBase;
+            var msg:String;
+            switch (posicion) {
+                case "SOLICITUD":
+                    target = flagMenuPosicionFinal ? solicitudButton : solicitudBigButton;
+                    msg = "Solicita tu uniforme";
+                    break;
+                case "ESTATUSPEDIDO":
+                    target = flagMenuPosicionFinal ? estatusButton : estatusBigButton;
+                    msg = "Revisa el estatus de tu uniforme";
+                    break;
+                case "ESTATUSDESCUENTO":
+                    target = flagMenuPosicionFinal ? descuentosButton : desctosBigButton;
+                    msg = "Revisa los pagos que has hecho de tu uniforme";
+                    break;
+                default:
+                    return;
+            }
+            if (target != null && target.visible) {
+                var maxWidth:Number = ToolTip.maxWidth;
+                if (flagMenuPosicionFinal) {
+                    ToolTip.maxWidth = 150;
+                }
+                var point:Point = new Point(target.x, target.y);
+                var globalPoint:Point = target.parent.localToGlobal(point);
+                tip = ToolTipManager.createToolTip(
+                        msg,
+                        globalPoint.x,
+                        globalPoint.y + target.height,
+                        "errorTipBelow",
+                        buttonBar) as ToolTip;
+
+                tip.setStyle("borderColor", 0x6495ed);
+                tip.setStyle("color", 0xffffff);
+                tip.setStyle("fontWeight", "bold");
+                ToolTip.maxWidth = maxWidth;
+            }
+        }
+
+        private function showPoliticas():void {
+            politicasTitleWindow.numEmpleado = this.numEmpleado;
+            politicasTitleWindow.nombreEmpleado = this.nombreEmpleado;
+            politicasTitleWindow.addEventListener("politicasAceptadas", politicasAceptadasHandler);
+            politicasTitleWindow.flagPoliticasAceptadas = politicasAceptadas;
+            politicasTitleWindow.addEventListener(Event.CLOSE, cerrarVentana);
+            politicasTitleWindow.addEventListener("manualDeImagen", showManualImagen);
+            politicasTitleWindow.flagManualImagen = manualImagen != null && manualImagen.length > 0;
+            contenido.removeElementAt(0);
+            contenido.addElementAt(politicasTitleWindow, 0);
+        }
+
+        private function cambioCanal(event:IndexChangeEvent):void {
+            var canal:Object = seleccionNegocio.selectedItem;
+            if (imgCanal.hasOwnProperty(canal.id)) {
+                canalImage.source = "img/logos/" + imgCanal[canal.id];
+            } else {
+                canalImage.source = "img/logos/" + imgCanal[99];
+            }
+            if (contenido.getElementAt(0) == solicitudTitleWindow) {
+                solicitudTitleWindow.idCanal = canal.id;
+                solicitudTitleWindow.canal = canal.descripcion;
+                solicitudTitleWindow.consultarUniformes();
+            }
+            consultaCargaActiva();
+        }
+
+        private function entraVentanaEffectEnd():void {
+            buttonBar.enabled = true;
+            politicasImage.enabled = true;
+            if (contenido.getElementAt(0) == politicasTitleWindow && encuestaPanel == null && capturaTallas == null) {
+                politicasTitleWindow.mostrarToolTip();
+            }
+        }
+
+        override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void {
+            super.updateDisplayList(unscaledWidth, unscaledHeight);
+            var prop:Number = Math.min(unscaledWidth, 1000) / 1000;
+            buttonBar.height = 76 * prop;
+            buttonBar.width = 500 * prop;
+            buttonBar.gap = unscaledWidth > 650 ? 6 : 2;
+
+            politicasLabel.x = 460 * prop;
+            politicasLabel.y = 35 * prop;
+
+            var buttonHeight:int = 50 * prop;
+            var buttonWidth:int = 125 * prop;
+
+            solicitudButton.width = buttonWidth;
+            solicitudButton.height = buttonHeight;
+            estatusButton.width = buttonWidth;
+            estatusButton.height = buttonHeight;
+            descuentosButton.width = buttonWidth;
+            descuentosButton.height = buttonHeight;
+            entregaButton.width = buttonWidth;
+            entregaButton.height = buttonHeight;
+        }
+
+        private function moverBotones(indexSeleccionado:int):void {
+            quitarToolTip();
+            bigButtonsGroup.enabled = false;
+            this.nextIndex = indexSeleccionado;
+            switch (indexSeleccionado) {
+                case INDEX_SOLICITUD:
+                    currentButton = solicitudButton;
+                    break;
+                case INDEX_ESTATUS:
+                    currentButton = estatusButton;
+                    break;
+                case INDEX_DESCTOS:
+                    currentButton = descuentosButton;
+                    break;
+                case INDEX_ENTREGA:
+                    currentButton = entregaButton;
+                    break;
+            }
+            if (currentButton != null) {
+                currentButton.selected = true;
+            }
+
+            inicializaAnimacion(solicitudButton, solicitudMove3D, solicitudResize);
+            inicializaAnimacion(estatusButton, estatusMove3D, estatusResize);
+            inicializaAnimacion(descuentosButton, desctosMove3D, desctosResize);
+            inicializaAnimacion(entregaButton, entregaMove3D, entregaResize);
+            menuAnimation.play();
+            flagMenuPosicionFinal = true;
+        }
+
+        private function inicializaAnimacion(target:UIComponent, move3D:Move3D, resize:Resize):void {
+            var container:DisplayObjectContainer = UIComponent(move3D.target).parent;
+            var targetGlobalPoint:Point = buttonBar.localToGlobal(new Point(target.x, target.y));
+            var sourceLocalPoint:Point = container.globalToLocal(targetGlobalPoint);
+
+            move3D.xTo = sourceLocalPoint.x;
+            move3D.yTo = sourceLocalPoint.y;
+            resize.widthTo = target.width;
+            resize.heightTo = target.height;
+        }
+
+        private function finalizaReposicionMenu(event:EffectEvent):void {
+            buttonBar.visible = true;
+            politicasImage.visible = true;
+            showNewIndex(event);
+        }
+
+        private function showManualImagen(event:Event):void {
+            FlexGlobals.topLevelApplication.dispatchEvent(new Event("quitarToolTips", true));
+            var ayudaWindow:ManualImagen = ManualImagen(
+                    PopUpManager.createPopUp(UIComponent(FlexGlobals.topLevelApplication), ManualImagen, true));
+            ayudaWindow.width = this.width - 20;
+            ayudaWindow.height = this.height - 20;
+            ayudaWindow.addEventListener(CloseEvent.CLOSE, cerrarPopUp);
+            ayudaWindow.imagenes = manualImagen;
+            PopUpManager.centerPopUp(ayudaWindow);
+        }
+
+        private static function cerrarPopUp(event:CloseEvent):void {
+            PopUpManager.removePopUp(IFlexDisplayObject(event.target));
+        }
+
+        private function obtenerConfiguracionResultHandler(event:ResultEvent):void {
+            validateAndRemoveSpinner();
+            if (!MensajeUtil.validaServiceResponse(event)) {
+                return;
+            }
+            Globals.CONFIG = event.result.config;
+            if (Globals.CONFIG['consultaItalikaActiva'] == "true") {
+                solicitudesExternas.retreiveSolicitudesExternas(numEmpleado);
+            }
+
+        }
+
+        private function obtenerConfiguracionFaultHandler(event:FaultEvent):void {
+            validateAndRemoveSpinner();
+            MensajeUtil.mostrarMensajeFault(event);
+        }
+
+        private function validateAndRemoveSpinner():void {
+            requestPendientes--;
+            if (requestPendientes == 0) {
+                spinner.stop();
+                spinnerGroup.visible = false;
+                spinnerGroup.includeInLayout = false;
+            }
+        }
+
+        private function consultaCargaActiva(evt:CloseEvent = null):void {
+            busyIndicator.visible = true;
+            cargaButton.visible = false;
+            var canal:Object = seleccionNegocio.selectedItem;
+            consultaEmpleado.consultaCargaActiva(numEmpleado, canal.id, funcion);
+        }
+
+        private function consultaCargaActivaResultHandler(event:ResultEvent):void {
+            busyIndicator.visible = false;
+            var mostrarVentana:Boolean = cargaActiva == null;
+            cargaActiva = event.result.value;
+            if (cargaActiva.idCarga != null) {
+                cargaButton.visible = true;
+                if (!cargaActiva.bandMedidasCapturadas && mostrarVentana) {
+                    quitarToolTip();
+                    abrirCapturaTallas();
+                }
+            }
+        }
+
+        private function consultaCargaActivaFaultandler(event:FaultEvent):void {
+            busyIndicator.visible = false;
+            MensajeUtil.mostrarMensajeFault(event);
+        }
+
+        private function abrirCapturaTallas():void {
+            capturaTallas = CapturaTallasWindow(
+                    PopUpManager.createPopUp(
+                            DisplayObject(FlexGlobals.topLevelApplication),
+                            CapturaTallasWindow,
+                            true
+                    ));
+            capturaTallas.addEventListener(CloseEvent.CLOSE, cerrarPopUp);
+            capturaTallas.addEventListener(CloseEvent.CLOSE, consultaCargaActiva);
+            capturaTallas.carga = this.cargaActiva;
+            capturaTallas.idCanal = seleccionNegocio.selectedItem.id;
+            capturaTallas.idEmpleado = this.numEmpleado;
+            capturaTallas.idFuncion = this.funcion;
+            capturaTallas.idGenero = this.idGenero;
+            PopUpManager.bringToFront(capturaTallas);
+            PopUpManager.centerPopUp(capturaTallas);
+            capturaTallas.consultaTallasParaCapturar();
+        }
+        ]]>
+    </fx:Script>
+
+    <containers:menuContent>
+        <s:Group top="0" left="0" right="0" bottom="0">
+            <s:VGroup top="0" left="0" right="0" bottom="0" horizontalAlign="center" verticalAlign="middle">
+                <s:Label id="politicasLabel"
+                         fontWeight="bold" width="90%"
+                         lineBreak="toFit"
+                         text="Para solicitar tu uniforme debes leer y aceptar las políticas"/>
+            </s:VGroup>
+            <s:HGroup id="buttonBar"
+                      verticalAlign="middle"
+                      visible="false"
+                      top="0" left="10" right="0" bottom="0" horizontalAlign="center">
+                <s:ToggleButton id="solicitudButton"
+                                cornerRadius="5"
+                                click="cambiarVentana(INDEX_SOLICITUD, event);"
+                                skinClass="skins.ToggleButtonSkin"/>
+                <s:ToggleButton id="estatusButton"
+                                cornerRadius="5"
+                                click="cambiarVentana(INDEX_ESTATUS, event);"
+                                skinClass="skins.ToggleButtonSkin"/>
+                <s:ToggleButton id="descuentosButton"
+                                cornerRadius="5"
+                                click="cambiarVentana(INDEX_DESCTOS, event);"
+                                skinClass="skins.ToggleButtonSkin"/>
+                <s:ToggleButton id="entregaButton"
+                                cornerRadius="5"
+                                visible="{flagEntrega}"
+                                includeInLayout="{flagEntrega}"
+                                click="cambiarVentana(INDEX_ENTREGA, event);"
+                                skinClass="skins.ToggleButtonSkin"/>
+            </s:HGroup>
+        </s:Group>
+
+    </containers:menuContent>
+
+    <containers:infoContent>
+        <s:HGroup top="0" right="5" bottom="0" verticalAlign="middle">
+            <s:BusyIndicator id="busyIndicator" right="5"/>
+        </s:HGroup>
+
+        <s:Group id="infoEmpleadoGroup"
+                 visible="false"
+                 showEffect="{fadeIn}"
+                 top="3" bottom="2" left="0" right="0">
+            <s:VGroup gap="3" horizontalAlign="left" left="5" top="0" bottom="0" verticalAlign="middle">
+                <s:Label id="nombreLbl" fontWeight="bold" color="#444444"/>
+                <s:Label id="puestoLbl" color="#910000"/>
+            </s:VGroup>
+
+            <s:HGroup left="0" right="0" bottom="0" top="0" horizontalAlign="center" verticalAlign="middle">
+                <s:Image id="canalImage"
+                         smooth="true"
+                         smoothingQuality="high"/>
+            </s:HGroup>
+
+            <s:HGroup right="5" top="0" bottom="0" verticalAlign="middle">
+                <s:Button id="cargaButton"
+                          label="Captura tus medidas"
+                          visible="false"
+                          cornerRadius="5"
+                          icon="@Embed(source='/assets/icon_rule.png')"
+                          click="abrirCapturaTallas()" chromeColor="0x6495ed" fontWeight="bold"/>
+                <s:DropDownList id="seleccionNegocio"
+                                visible="false"
+                                includeInLayout="false"
+                                labelField="descripcion"
+                                change="cambioCanal(event)"
+                                width="135"/>
+            </s:HGroup>
+
+        </s:Group>
+
+
+    </containers:infoContent>
+
+    <s:Group id="contenido" width="100%" height="100%">
+        <s:VGroup id="spinnerGroup" verticalAlign="middle" horizontalAlign="center" width="100%" height="100%">
+            <assets:Spinner id="spinner"/>
+            <s:Label id="mensajeLabel" text="Cargando Datos"/>
+        </s:VGroup>
+    </s:Group>
+
+</containers:UniformesPanel>

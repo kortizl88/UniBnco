@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:sec="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+                           http://www.springframework.org/schema/security
+                           http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+
+    <!-- BEANS -->
+    <bean id="acertumAuthenticationSuccessHandler"
+          class="acertum.web.session.handlers.AcertumSuccesAuthenticationHandler">
+        <property name="defaultTargetUrl" value="/"/>
+    </bean>
+
+    <bean id="acertumLogoutHandler" class="acertum.web.session.handlers.AcertumSucessLogoutHandler"/>
+
+    <bean id="acertumAuthenticationProvider" class="acertum.web.session.manager.AcertumAuthenticationProvider">
+        <property name="userDetailsService" ref="acertumUserDetailsService"/>
+    </bean>
+
+    <bean id="acertumUserDetailsService" class="acertum.web.session.manager.AcertumUserDetailsService"/>
+
+    <!-- Configuración de seguridad-->
+    <sec:http auto-config="true" use-expressions="true" access-denied-page="/denied"
+              request-matcher="regex">
+
+        <sec:logout invalidate-session="false" delete-cookies="JSESSIONID"
+                    logout-url="/logoutSpringSecurity"
+                    success-handler-ref="acertumLogoutHandler"/>
+
+    </sec:http>
+
+    <sec:authentication-manager>
+        <sec:authentication-provider ref="acertumAuthenticationProvider"/>
+    </sec:authentication-manager>
+</beans>

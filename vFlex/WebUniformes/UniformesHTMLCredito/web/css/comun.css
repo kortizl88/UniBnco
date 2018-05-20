@@ -1,0 +1,28 @@
+
+#mensajeWindow {
+    max-width: 500px;
+}
+
+#dialog_label {
+    padding: 10px;
+}
+
+#mensaje {
+    padding-bottom: 10px;
+}
+
+#divFooterMensaje {
+    text-align: center;
+}
+
+#alertPopup {
+    width: 550px;
+}
+
+#ditTituloAlert {
+    padding: 10px;
+}
+
+#divFooterPopup {
+    text-align: center;
+}

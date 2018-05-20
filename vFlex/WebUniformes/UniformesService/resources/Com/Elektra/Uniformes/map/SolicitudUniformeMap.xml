@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Com.Elektra.Uniformes.map.SolicitudUniformeMap">
+
+    <resultMap id="ValidacionResultMap" type="Com.Elektra.Uniformes.Dto.ValidacionResult">
+        <result property="estatus" column="ESTATUS"/>
+        <result property="tieneRemision" column="REMISION"/>
+        <result property="descripcionMotivo" column="STRINGMOTIVO"/>
+        <result property="datosMotivo" column="DATOSMOTIVO"/>
+        <result property="aplicaExcepcion" column="APLICAEXCEPCION"/>
+    </resultMap>
+
+    <resultMap id="KitUniformeResultMap" type="Com.Elektra.Uniformes.Dto.KitUniformeDto">
+        <result property="idKit" column="FIIDKIT"/>
+        <result property="flagMostrarGuia" column="FIMOSTRARGUIA"/>
+        <result property="semanasDescto" column="FISEMANASDESCTO"/>
+        <result property="archivoGuia" column="FCARCHIVOSGUIA"/>
+        <collection property="items" ofType="Com.Elektra.Uniformes.Dto.ItemUniformeDto">
+            <result property="descripcion" column="DESCRIPCION"/>
+            <result property="precioSubkit" column="FNPRECIOSUBKIT"/>
+            <result property="precioExtraordinario" column="FNPRECIOEXT"/>
+            <result property="cantidad" column="TOTAL"/>
+            <result property="flagObligatorio" column="FIOBLIGATORIO"/>
+            <result property="mesesRenovacion" column="FIMESESRENOV"/>
+            <result property="aplicaReposicion" column="FIREPOSICION"/>
+            <result property="grupo" column="FIAGRUPAR"/>
+            <result property="guiaTallas" column="FCGUIASUBKIT"/>
+            <collection property="idCategorias" ofType="java.lang.Integer">
+                <result column="ID_CATEGORIA" typeHandler="org.apache.ibatis.type.IntegerTypeHandler"/>
+            </collection>
+            <collection property="imagenes" ofType="java.lang.String">
+                <result column="IMAGEN" typeHandler="org.apache.ibatis.type.StringTypeHandler"/>
+            </collection>
+            <collection property="subkitsIds" ofType="java.lang.Integer">
+                <result column="FIIDSUBKIT" typeHandler="org.apache.ibatis.type.IntegerTypeHandler"/>
+            </collection>
+            <collection property="tallas" ofType="Com.Elektra.Uniformes.Dto.TallaDto">
+                <result property="idTalla" column="ID"/>
+                <result property="tallaClave" column="DESCRIPCIONTALLA"/>
+                <collection property="piezas" ofType="Com.Elektra.Uniformes.Dto.PiezaDto">
+                    <result property="sku" column="SKU"/>
+                    <result property="cantidad" column="TOTAL"/>
+                    <result property="categoria" column="ID_CATEGORIA"/>
+                    <result property="inventario" column="INVENTARIO"/>
+                    <result property="idSubkit" column="FIIDSUBKIT"/>
+                    <result property="costo" column="PRECIO"/>
+                </collection>
+            </collection>
+        </collection>
+    </resultMap>
+
+    <resultMap id="EnsambleResultMap" type="Com.Elektra.Uniformes.Dto.EnsambleDto">
+        <result property="sku" column="FISKU"/>
+        <result property="inventario" column="FICANTIDAD"/>
+        <result property="costo" column="PRECIO"/>
+    </resultMap>
+
+    <resultMap id="CapturaMedidaResultMap" type="Com.Elektra.Uniformes.Dto.CapturaMedidaDto">
+        <result property="idTipoPrenda" column="FIIDTIPOPRENDA"/>
+        <result property="descripcion" column="CATDESCR"/>
+        <collection property="medidas" ofType="Com.Elektra.Uniformes.Dto.MedidaDto">
+            <result property="idMedida" column="FIIDMEDIDA"/>
+            <result property="descripcion" column="FCDESCRIPCION"/>
+            <result property="unidadesMedida" column="FCUNIDADDEMEDIDA"/>
+            <result property="valor" column="FNVALOR"/>
+            <result property="orden" column="FIORDEN"/>
+        </collection>
+    </resultMap>
+
+    <insert id="guardaSolicitudSinInventario"
+            parameterType="Com.Elektra.Uniformes.Dto.SolicitudSinInventarioDto"
+            statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPGUARDASOLICSININVENTARIO(
+        #{idEmpleado, mode=IN, jdbcType=INTEGER},
+        #{periodo, mode=IN, jdbcType=INTEGER},
+        #{idSubkit, mode=IN, jdbcType=INTEGER},
+        #{sku, mode=IN, jdbcType=INTEGER},
+        #{sucursal, mode=IN, jdbcType=INTEGER}
+        )}
+    </insert>
+
+    <select id="validaSolicitud"
+            parameterType="map"
+            statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPVALIDASOLICITUD(
+        #{empleado, mode=IN, jdbcType=INTEGER},
+        #{idFuncion, mode=IN, jdbcType=INTEGER},
+        #{idGenero, mode=IN, jdbcType=INTEGER},
+        #{idSubkit, mode=IN, jdbcType=INTEGER},
+        #{mesesRenov, mode=IN, jdbcType=INTEGER},
+        #{result.list, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=ValidacionResultMap}
+        )}
+    </select>
+
+    <select id="consultaEsPrimerKit"
+            parameterType="map"
+            statementType="CALLABLE">
+         {CALL #{result.returnVal, mode=OUT, jdbcType=INTEGER, javaType=java.lang.Boolean} :=
+         RHEKT.PAWEBUNIFORMES.FNESPRIMERKIT(
+         #{idKitUniforme, mode=IN, jdbcType=INTEGER},
+         #{idEmpleado, mode=IN, jdbcType=INTEGER}
+         )}
+    </select>
+
+    <select id="consultaUniformes" parameterType="map" statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPOBTIENEKITPORTIENDA(
+        #{empleado, mode=IN, jdbcType=INTEGER},
+        #{idCia, mode=IN, jdbcType=INTEGER},
+        #{idFuncion, mode=IN, jdbcType=INTEGER},
+        #{idGenero, mode=IN, jdbcType=INTEGER},
+        #{idTienda, mode=IN, jdbcType=INTEGER},
+        #{result.list, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=KitUniformeResultMap}
+        )}
+    </select>
+
+    <select id="obtenerEnsamble" parameterType="map" statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPOBTENERENSAMBLE(
+        #{sku, mode=IN, jdbcType=INTEGER},
+        #{sucursal, mode=IN, jdbcType=INTEGER},
+        #{result.list, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=EnsambleResultMap}
+        )}
+    </select>
+
+    <select id="consultaMedidasPorCarga" parameterType="map" statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPCONCAPTURASTALLAS(
+          #{idEmpleado, mode=IN, jdbcType=INTEGER},
+          #{idCarga, mode=IN, jdbcType=INTEGER},
+          #{result.list, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=CapturaMedidaResultMap}
+        )}
+    </select>
+
+    <select id="guardaCapturaDeMedida" parameterType="map" statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPGUARDACAPTURAMEDIDA(
+            #{captura.idCarga, mode=IN, jdbcType=INTEGER},
+            #{captura.idEmpleado, mode=IN, jdbcType=INTEGER},
+            #{captura.idNegocio, mode=IN, jdbcType=INTEGER},
+            #{captura.funcionSap, mode=IN, jdbcType=INTEGER},
+            #{captura.idGenero, mode=IN, jdbcType=INTEGER},
+        #{captura.idCaptura, mode=OUT, jdbcType=INTEGER}
+        )}
+    </select>
+
+    <select id="guardaCapturaDetalle" parameterType="map" statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPGUARDACAPTURADETALLE(
+        #{idCaptura, mode=IN, jdbcType=INTEGER},
+        #{detalle.idMedida, mode=IN, jdbcType=INTEGER},
+        #{detalle.valor, mode=IN, jdbcType=NUMERIC},
+            #{result.returnVal, mode=OUT, jdbcType=INTEGER}
+        )}
+    </select>
+
+</mapper>

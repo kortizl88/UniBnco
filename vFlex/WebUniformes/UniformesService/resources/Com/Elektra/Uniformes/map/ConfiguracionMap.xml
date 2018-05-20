@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Com.Elektra.Uniformes.map.ConfiguracionMap">
+    <resultMap id="configuracionResultMap" type="org.apache.commons.lang3.tuple.MutablePair">
+        <result column="FCNOMBREPARAM" property="left"/>
+        <result column="VALOR" property="right"/>
+    </resultMap>
+
+    <select id="consultaConfiguracion"
+            parameterType="map"
+            statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPOBTENERCONFIGURACION(
+        #{idSucursal, mode=IN, jdbcType=INTEGER},
+        #{idCanal, mode=IN, jdbcType=INTEGER},
+        #{idPais, mode=IN, jdbcType=INTEGER},
+        #{result.list, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=configuracionResultMap}
+        )}
+    </select>
+
+
+</mapper>

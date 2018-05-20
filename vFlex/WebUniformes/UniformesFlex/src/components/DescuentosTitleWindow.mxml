@@ -1,0 +1,413 @@
+<?xml version="1.0"?>
+<containers:UniformesTitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+                                 xmlns:mx="library://ns.adobe.com/flex/mx"
+                                 xmlns:s="library://ns.adobe.com/flex/spark"
+                                 xmlns:assets="assets.*" xmlns:components="components.*"
+                                 title="Descuentos"
+                                 skinClass="skins.RedTitleWindowSkin"
+                                 xmlns:containers="containers.*">
+    <fx:Declarations>
+        <mx:RemoteObject id="descuentoEmpleado" destination="descuentoEmpleado" channelSet="{ROUtil.channelSet}"
+                         fault="faultHandler(event)">
+            <mx:method name="consDescEmp" result="consultaDescuentosHandler(event)"/>
+            <mx:method name="consultaFolio" result="consultaFoliosHandler(event)"/>
+        </mx:RemoteObject>
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import mx.collections.ArrayCollection;
+        import mx.events.CloseEvent;
+        import mx.rpc.events.FaultEvent;
+        import mx.rpc.events.ResultEvent;
+
+        import spark.collections.Sort;
+        import spark.collections.SortField;
+
+        import utils.MensajeUtil;
+        import utils.ROUtil;
+        import utils.StringUtils;
+
+        [Bindable]
+        private var _idEmpleado:Number;
+
+        [Bindable]
+        private var _nombreEmpleado:String;
+
+        [Bindable]
+        private var folios:ArrayCollection;
+
+        [Bindable]
+        public var descuentos:ArrayCollection;
+
+        [Bindable]
+        private var lblPedidoDetalle:String;
+
+        [Bindable]
+        private var detalleArray:Array;
+
+        [Bindable]
+        private var _flagManualImagen:Boolean;
+
+        public function get idEmpleado():Number {
+            return _idEmpleado;
+        }
+
+        public function set idEmpleado(value:Number):void {
+            _idEmpleado = value;
+        }
+
+        public function get nombreEmpleado():String {
+            return _nombreEmpleado;
+        }
+
+        public function set nombreEmpleado(value:String):void {
+            _nombreEmpleado = value;
+        }
+
+        public function set flagManualImagen(value:Boolean):void {
+            _flagManualImagen = value;
+        }
+
+        public function consultaFolio():void {
+            currentState = "BeforeLoadInfo";
+            descuentoEmpleado.consultaFolio(_idEmpleado);
+        }
+
+        private function faultHandler(event:FaultEvent):void {
+            MensajeUtil.mostrarMensajeFault(event, cerrarVentana);
+        }
+
+        private function cerrarVentana(event:CloseEvent = null):void {
+            this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+        }
+
+        private function consultaDescuentosHandler(event:ResultEvent):void {
+            if (!MensajeUtil.validaServiceResponse(event, cerrarVentana)) {
+                return;
+            }
+
+            descuentos = event.result.empleadoDesctos;
+            var totPagado:Number = 0;
+            var totPorPagar:Number = 0;
+            var total:Number = 0;
+            for each(var obj:Object in descuentos) {
+                totPagado += obj.pagado;
+                totPorPagar += obj.porPagar;
+                total += obj.total;
+            }
+            totalPagadoLbl.text = StringUtils.currencyFormat(totPagado);
+            totalPorPagarLbl.text = StringUtils.currencyFormat(totPorPagar);
+            totalLbl.text = StringUtils.currencyFormat(total);
+            currentState = "DescuentosCargado";
+        }
+
+        private function consultaFoliosHandler(event:ResultEvent):void {
+            if (!MensajeUtil.validaServiceResponse(event, cerrarVentana)) {
+                return;
+            }
+
+            folios = event.result.folios;
+            if (folios == null || folios.length == 0) {
+                MensajeWindow.show(
+                        "Por el momento no se encuentra información de tus descuentos.",
+                        "No se encontraron pedidos en descuento.",
+                        MensajeWindow.LEVEL_INFO,
+                        MensajeWindow.OK,
+                        cerrarVentana
+                );
+                return;
+            }
+            var dataSortField:SortField = new SortField();
+            dataSortField.name = "fecha";
+            dataSortField.descending = true;
+
+            var dataSort:Sort = new Sort();
+            dataSort.fields = [dataSortField];
+
+            folios.sort = dataSort;
+            folios.refresh();
+
+            historiaList.selectedIndex = 0;
+            if (folios.length > 1) {
+                currentState = "FoliosCargados";
+            }
+            consultaDescuentos();
+        }
+
+        private function consultaDescuentos():void {
+            var item:Object = folios.getItemAt(historiaList.selectedIndex);
+            descuentoEmpleado.consDescEmp(this.idEmpleado, item.folio);
+            currentState = "CargandoDescuentos";
+        }
+
+        private static function fechaDropDownList(item:Object):String {
+            var fecha:Date = item.fecha;
+            return StringUtils.df.format(fecha);
+        }
+
+        public function showHeadersFunc(data:Object):Boolean {
+            return descuentos.getItemIndex(data) == 0;
+        }
+
+        private function dataChangeHandler():void {
+            this.dispatchEvent(new Event("cambioFolio"));
+        }
+        ]]>
+    </fx:Script>
+
+    <containers:states>
+        <s:State name="BeforeLoadInfo"/>
+        <s:State name="FoliosCargados"/>
+        <s:State name="DescuentosCargado" enterState="{spinner.stop()}" exitState="{spinner.play()}"/>
+        <s:State name="DetalleCargado"/>
+        <s:State name="CargandoDescuentos"/>
+    </containers:states>
+    <containers:transitions>
+        <s:Transition toState="BeforeLoadInfo">
+            <s:Sequence>
+                <s:SetAction property="includeInLayout" value="false" target="{descuentosList}"/>
+                <s:SetAction property="visible" value="false" target="{descuentosList}"/>
+
+                <s:SetAction property="visible" value="true" target="{spinnerGroup}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{spinnerGroup}"/>
+            </s:Sequence>
+        </s:Transition>
+        <s:Transition toState="FoliosCargados">
+            <s:Sequence target="{seleccionFolio}">
+                <s:SetAction property="visible" value="true"/>
+                <s:Fade alphaFrom="0" alphaTo="1"/>
+            </s:Sequence>
+        </s:Transition>
+        <s:Transition toState="DescuentosCargado">
+            <s:Sequence>
+                <s:SetAction property="visible" value="false" target="{spinnerGroup}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{spinnerGroup}"/>
+
+                <s:SetAction property="includeInLayout" value="true" target="{descuentosList}"/>
+                <s:SetAction property="visible" value="true" target="{descuentosList}"/>
+
+                <s:Fade alphaFrom="0" alphaTo="1" target="{descuentosList}"/>
+            </s:Sequence>
+        </s:Transition>
+
+        <s:Transition toState="CargandoDescuentos">
+            <s:Sequence>
+                <s:SetAction property="visible" value="false" target="{descuentosList}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{descuentosList}"/>
+
+                <s:SetAction property="includeInLayout" value="true" target="{spinnerGroup}"/>
+                <s:SetAction property="visible" value="true" target="{spinnerGroup}"/>
+            </s:Sequence>
+        </s:Transition>
+    </containers:transitions>
+
+    <containers:rightControlContent>
+        <components:BotonAyuda numEmpleado="{_idEmpleado}" nombreEmpleado="{_nombreEmpleado}"/>
+    </containers:rightControlContent>
+
+    <containers:leftControlContent>
+        <s:Image xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+                 source="@Embed(source='/assets/book_info.png')" left="5" top="3"
+                 useHandCursor="true"
+                 mouseChildren="false"
+                 buttonMode="true"
+                 click="{this.dispatchEvent(new Event('manualDeImagen'))}"
+                 visible="{_flagManualImagen}"/>
+    </containers:leftControlContent>
+
+    <containers:layout>
+        <s:BasicLayout/>
+    </containers:layout>
+    <s:HGroup id="spinnerGroup" paddingBottom="10" verticalAlign="middle" horizontalAlign="center"
+              top="0" left="0" right="0" bottom="0">
+        <assets:Spinner id="spinner" tickColor="#66aaff"/>
+        <s:Label id="spinnerLabel" text="Cargando datos..."/>
+    </s:HGroup>
+    <s:Scroller top="0" right="0" left="0" bottom="0">
+        <s:VGroup top="0" right="0" left="0" bottom="0" gap="0" horizontalAlign="center"
+                  id="descuentosList"
+                  visible="false">
+            <s:HGroup horizontalAlign="center" verticalAlign="middle" paddingTop="5" paddingBottom="3">
+                <s:Spacer width="22"/>
+                <s:Label text="Pedido" width="100" fontWeight="bold"/>
+                <s:Label text="Descripción" width="100" fontWeight="bold"/>
+                <s:Label text="Pagado" width="100" fontWeight="bold"/>
+                <s:Label text="Por pagar" width="100" fontWeight="bold"/>
+                <s:Label text="Total" width="100" fontWeight="bold"/>
+            </s:HGroup>
+            <s:List contentBackgroundAlpha="0"
+                    borderAlpha="0"
+                    preventSelection="true"
+                    show="dataChangeHandler()"
+                    horizontalScrollPolicy="off"
+                    dataProvider="{descuentos}"
+                    useVirtualLayout="false">
+                <s:layout>
+                    <s:VerticalLayout requestedRowCount="{descuentos.length}" useVirtualLayout="false" gap="0"/>
+                </s:layout>
+                <s:itemRenderer>
+                    <fx:Component>
+                        <s:ItemRenderer creationComplete="init()" autoDrawBackground="false">
+                            <s:layout>
+                                <s:VerticalLayout horizontalAlign="center"
+                                                  paddingTop="0"
+                                                  paddingBottom="0"
+                                                  variableRowHeight="true"
+                                                  useVirtualLayout="false"
+                                                  gap="0"/>
+                            </s:layout>
+                            <fx:Declarations>
+                                <s:Sequence id="abrirEffect">
+                                    <s:Resize target="{detalleGroup}"
+                                              heightFrom="0"
+                                              heightTo="{245}"/>
+                                    <s:SetAction property="includeInLayout" value="true" target="{dataGrid}"/>
+                                    <s:SetAction property="visible" value="true" target="{dataGrid}"/>
+                                    <s:Parallel target="{dataGrid}">
+                                        <s:Fade alphaFrom="0" alphaTo="1"/>
+                                        <s:Move3D xFrom="-500" xTo="0"/>
+                                    </s:Parallel>
+                                </s:Sequence>
+                                <s:Sequence id="cerrarEffect">
+                                    <s:Parallel target="{dataGrid}">
+                                        <s:Fade alphaFrom="1" alphaTo="0"/>
+                                        <s:Move3D xFrom="0" xTo="500"/>
+                                    </s:Parallel>
+                                    <s:SetAction property="visible" value="false" target="{dataGrid}"/>
+                                    <s:SetAction property="includeInLayout" value="false" target="{dataGrid}"/>
+                                    <s:Resize target="{detalleGroup}"
+                                              heightTo="0"/>
+                                </s:Sequence>
+
+                                <s:DateTimeFormatter id="dateTimeFormatter"
+                                                     dateStyle="medium"
+                                                     locale="es-MX" timeStyle="none"/>
+
+                            </fx:Declarations>
+                            <fx:Script>
+                                <![CDATA[
+                                import mx.utils.StringUtil;
+
+                                import spark.components.gridClasses.GridColumn;
+
+                                import utils.StringUtils;
+
+                                private var flagAbierto:Boolean = false;
+
+                                private function init():void {
+                                    outerDocument.addEventListener("cambioFolio", reinicializa);
+                                }
+
+                                private static function numPagoLblFunc(data:Object, column:GridColumn):String {
+                                    return StringUtil.substitute("Pago {0} de {1}", data[column.dataField], data.periodos);
+                                }
+
+                                private function reinicializa(event:Event):void {
+                                    flagAbierto = false;
+                                    dataGrid.includeInLayout = false;
+                                    dataGrid.visible = false;
+                                }
+
+                                public function verDetalle():void {
+                                    if (abrirEffect.isPlaying || cerrarEffect.isPlaying) {
+                                        return;
+                                    }
+                                    if (flagAbierto) {
+                                        cerrarEffect.play();
+                                    } else {
+                                        abrirEffect.play();
+                                    }
+                                    flagAbierto = !flagAbierto;
+
+                                }
+
+                                public static function getDataProvider(obj:Object):ArrayCollection {
+                                    return new ArrayCollection([obj]);
+                                }
+                                ]]>
+                            </fx:Script>
+                            <s:Line width="100%">
+                                <s:stroke>
+                                    <s:SolidColorStroke color="0x000000"/>
+                                </s:stroke>
+                            </s:Line>
+                            <s:HGroup horizontalAlign="center" verticalAlign="middle"
+                                      paddingTop="3" paddingBottom="3">
+                                <s:Button icon="@Embed(source='/assets/icon_add_b.png')"
+                                          click="{verDetalle()}"
+                                          toolTip="Ver detalle"
+                                          width="22"/>
+                                <s:Label text="{data.refPedido}" width="100"/>
+                                <s:Label text="{data.descGral}" width="100"/>
+                                <s:Label text="{StringUtils.currencyFormat(data.pagado)}" width="100"/>
+                                <s:Label text="{StringUtils.currencyFormat(data.porPagar)}" width="100"/>
+                                <s:Label text="{StringUtils.currencyFormat(data.total)}" width="100"/>
+                            </s:HGroup>
+                            <s:HGroup id="detalleGroup" width="70%" horizontalAlign="center">
+                                <s:DataGrid id="dataGrid"
+                                            requestedRowCount="8"
+                                            textAlign="center"
+                                            visible="false" includeInLayout="false"
+                                            width="100%">
+                                    <s:dataProvider>
+                                        <mx:ArrayCollection source="{data.detalle}"/>
+                                    </s:dataProvider>
+                                    <s:columns>
+                                        <mx:ArrayCollection>
+                                            <s:GridColumn dataField="anio"
+                                                          headerText="Año"
+                                                          minWidth="50"
+                                                          headerRenderer="skins.CenterHeaderRenderer"/>
+                                            <s:GridColumn dataField="semana"
+                                                          headerText="Periodo"
+                                                          minWidth="80"
+                                                          headerRenderer="skins.CenterHeaderRenderer"/>
+                                            <s:GridColumn dataField="descuento"
+                                                          headerText="Pago"
+                                                          labelFunction="StringUtils.currencyFormatColumn"
+                                                          minWidth="70"
+                                                          headerRenderer="skins.CenterHeaderRenderer"/>
+                                            <s:GridColumn dataField="numPago"
+                                                          headerText=""
+                                                          labelFunction="numPagoLblFunc"/>
+
+                                        </mx:ArrayCollection>
+                                    </s:columns>
+                                </s:DataGrid>
+                            </s:HGroup>
+                        </s:ItemRenderer>
+                    </fx:Component>
+                </s:itemRenderer>
+            </s:List>
+            <s:VGroup>
+                <s:Line width="100%">
+                    <s:stroke>
+                        <s:SolidColorStroke color="0x000000" weight="2"/>
+                    </s:stroke>
+                </s:Line>
+                <s:HGroup horizontalAlign="center" verticalAlign="middle" paddingLeft="1">
+                    <s:Spacer width="22"/>
+                    <s:Label text="" width="100" fontWeight="bold"/>
+                    <s:Label text="" width="100" fontWeight="bold"/>
+                    <s:Label id="totalPagadoLbl" text="" width="100" fontWeight="bold"/>
+                    <s:Label id="totalPorPagarLbl" text="" width="100" fontWeight="bold"/>
+                    <s:Label id="totalLbl" text="" width="100" fontWeight="bold"/>
+                </s:HGroup>
+            </s:VGroup>
+
+        </s:VGroup>
+    </s:Scroller>
+
+    <containers:controlBarContent>
+        <s:HGroup id="seleccionFolio" verticalAlign="middle" horizontalAlign="right" visible.BeforeLoadInfo="false">
+            <s:Label text="Consultar pedidos anteriores:"/>
+            <s:DropDownList id="historiaList"
+                            labelFunction="fechaDropDownList"
+                            change="consultaDescuentos()"
+                            width="140" dataProvider="{folios}">
+            </s:DropDownList>
+        </s:HGroup>
+    </containers:controlBarContent>
+
+
+</containers:UniformesTitleWindow>

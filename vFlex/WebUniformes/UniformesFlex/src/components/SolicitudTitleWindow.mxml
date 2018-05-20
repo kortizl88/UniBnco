@@ -1,0 +1,1072 @@
+<?xml version="1.0"?>
+<containers:UniformesTitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+                                 xmlns:s="library://ns.adobe.com/flex/spark"
+                                 xmlns:mx="library://ns.adobe.com/flex/mx"
+                                 xmlns:assets="assets.*" xmlns:components="components.*"
+                                 title="Solicitud de Uniforme"
+                                 skinClass="skins.RedTitleWindowSkin"
+                                 xmlns:containers="containers.*">
+    <fx:Declarations>
+        <mx:NumberValidator id="tiendaValidator"
+                            minValue="0"
+                            lowerThanMinError=" "/>
+
+        <s:Linear id="linear"/>
+        <mx:Fade id="fadeIn" alphaFrom="0" alphaTo="1"/>
+
+        <mx:RemoteObject id="solicitudUniforme"
+                         destination="solicitudUniforme"
+                         channelSet="{ROUtil.channelSet}">
+            <mx:method name="consultaUniformes"
+                       result="consultaUniformesHandler(event)"
+                       fault="faultHandler(event)"/>
+            <mx:method name="guardaSolicitudSinInventario"
+                       result="MensajeUtil.validaServiceResponse(event)"
+                       fault="MensajeUtil.mostrarMensajeFault(event)"/>
+        </mx:RemoteObject>
+
+        <mx:RemoteObject id="tiendaPorEmpleado"
+                         destination="tiendaPorEmpleado"
+                         channelSet="{ROUtil.channelSet}"
+                         result="consultaTiendasHandler(event)"
+                         fault="faultHandler(event)"/>
+        <mx:RemoteObject id="grabaPedido"
+                         destination="grabaPedido"
+                         channelSet="{ROUtil.channelSet}"
+                         result="grabaPedidoHandler(event)"
+                         fault="faultHandler(event)"/>
+    </fx:Declarations>
+
+    <containers:states>
+        <s:State name="BeforeLoadInfo"/>
+        <s:State name="SeleccionarTienda"/>
+        <s:State name="CargandoKitUniforme"/>
+        <s:State name="AfterLoadInfo"/>
+        <s:State name="GrabandoPedido"/>
+    </containers:states>
+
+    <containers:transitions>
+        <s:Transition toState="BeforeLoadInfo">
+            <s:Sequence effectStart="playSpinner()">
+                <s:SetAction property="visible" value="false" target="{seleccionPrendasBox}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{seleccionPrendasBox}"/>
+
+                <s:SetAction property="visible" value="false" target="{tiendaGroup}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{tiendaGroup}"/>
+
+                <s:SetAction property="text" value="Cargando datos..." target="{spinnerLabel}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{spinnerGroup}"/>
+                <s:SetAction property="visible" value="true" target="{spinnerGroup}"/>
+            </s:Sequence>
+
+        </s:Transition>
+
+        <s:Transition toState="SeleccionarTienda">
+            <s:Sequence effectStart="stopSpinner()">
+                <s:SetAction property="visible" value="false" target="{spinnerGroup}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{spinnerGroup}"/>
+
+
+                <s:SetAction property="includeInLayout" value="true" target="{tiendaGroup}"/>
+                <s:SetAction property="visible" value="true" target="{tiendaGroup}"/>
+
+            </s:Sequence>
+        </s:Transition>
+
+        <s:Transition toState="CargandoKitUniforme">
+            <s:Sequence effectStart="playSpinner()">
+                <s:SetAction property="visible" value="false" target="{seleccionPrendasBox}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{seleccionPrendasBox}"/>
+
+                <s:SetAction property="text" value="Cargando datos..." target="{spinnerLabel}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{spinnerGroup}"/>
+                <s:SetAction property="visible" value="true" target="{spinnerGroup}"/>
+            </s:Sequence>
+        </s:Transition>
+
+        <s:Transition toState="AfterLoadInfo">
+            <s:Sequence effectStart="stopSpinner()">
+                <s:SetAction property="visible" value="false" target="{spinnerGroup}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{spinnerGroup}"/>
+
+                <s:SetAction property="includeInLayout" value="true" target="{tiendaGroup}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{seleccionPrendasBox}"/>
+
+                <s:SetAction property="visible" value="true" target="{tiendaGroup}"/>
+                <s:SetAction property="visible" value="true" target="{seleccionPrendasBox}"/>
+            </s:Sequence>
+        </s:Transition>
+
+
+        <s:Transition toState="GrabandoPedido">
+            <s:Sequence effectStart="playSpinner()">
+                <s:SetAction property="visible" value="false" target="{tiendaGroup}"/>
+                <s:SetAction property="visible" value="false" target="{seleccionPrendasBox}"/>
+
+                <s:SetAction property="includeInLayout" value="false" target="{tiendaGroup}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{seleccionPrendasBox}"/>
+
+                <s:SetAction property="text" value="Grabando pedido..." target="{spinnerLabel}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{spinnerGroup}"/>
+                <s:SetAction property="visible" value="true" target="{spinnerGroup}"/>
+            </s:Sequence>
+        </s:Transition>
+    </containers:transitions>
+
+    <fx:Script>
+        <![CDATA[
+        import model.ItemUniforme;
+        import model.SolicitudDto;
+
+        import mx.collections.ArrayCollection;
+        import mx.controls.ToolTip;
+        import mx.core.FlexGlobals;
+        import mx.core.IFlexDisplayObject;
+        import mx.core.UIComponent;
+        import mx.events.CloseEvent;
+        import mx.events.ResizeEvent;
+        import mx.events.ValidationResultEvent;
+        import mx.managers.PopUpManager;
+        import mx.managers.ToolTipManager;
+        import mx.rpc.events.FaultEvent;
+        import mx.rpc.events.ResultEvent;
+        import mx.utils.StringUtil;
+
+        import spark.components.Alert;
+        import spark.components.TitleWindow;
+        import spark.events.PopUpEvent;
+
+        import utils.MensajeUtil;
+        import utils.ROUtil;
+        import utils.StringUtils;
+
+        private var semanasDescto:int;
+
+
+        [Bindable]
+        private var _idEmpleado:Number;
+
+        [Bindable]
+        private var _nombreEmpleado:String;
+        private var _idCanal:Number;
+        private var _idFuncion:Number;
+        private var _idGenero:Number;
+        private var _pais:Number;
+        private var _canal:String;
+
+        [Bindable]
+        private var items:ArrayCollection = new ArrayCollection();
+
+        [Bindable]
+        private var itemsSeleccionados:ArrayCollection = new ArrayCollection();
+
+        [Bindable]
+        private var tiendas:ArrayCollection;
+
+        [Bindable]
+        private var total:Number = 0;
+
+        [Bindable]
+        private var seleccionRowCount:int;
+
+        private var toolTips:ArrayCollection = new ArrayCollection();
+
+        private var tiendaSeleccionada:Object;
+
+        private var flagSolicitudGenerada:Boolean = false;
+
+        [Bindable]
+        private var _flagManualImagen:Boolean;
+
+        [Embed(source='/assets/success.png')]
+        private var iconSuccess:Class;
+
+        [Embed(source='/assets/question.png')]
+        private var iconQuestion:Class;
+
+        private static const generoGuia:Object = {
+            1: "Dama",
+            2: "Caballero"
+        };
+
+
+        public function get idEmpleado():Number {
+            return _idEmpleado;
+        }
+
+        public function set idEmpleado(value:Number):void {
+            _idEmpleado = value;
+        }
+
+        public function get nombreEmpleado():String {
+            return _nombreEmpleado;
+        }
+
+        public function set nombreEmpleado(value:String):void {
+            _nombreEmpleado = value;
+        }
+
+        public function get idCanal():Number {
+            return _idCanal;
+        }
+
+        public function set idCanal(value:Number):void {
+            _idCanal = value;
+        }
+
+        public function get idFuncion():Number {
+            return _idFuncion;
+        }
+
+        public function set idFuncion(value:Number):void {
+            _idFuncion = value;
+        }
+
+        public function get idGenero():Number {
+            return _idGenero;
+        }
+
+        public function set idGenero(value:Number):void {
+            _idGenero = value;
+        }
+
+        public function get pais():Number {
+            return _pais;
+        }
+
+        public function set pais(value:Number):void {
+            _pais = value;
+        }
+
+        public function get canal():String {
+            return _canal;
+        }
+
+        public function set canal(value:String):void {
+            _canal = value;
+        }
+
+        public function set flagManualImagen(value:Boolean):void {
+            _flagManualImagen = value;
+        }
+
+        public function iniciaConsultas():void {
+            currentState = "BeforeLoadInfo";
+            seleccionRowCount = 0;
+            enviarButton.enabled = false;
+            total = 0;
+            items = new ArrayCollection();
+            itemsSeleccionados = new ArrayCollection();
+            tiendaPorEmpleado.getTiendasPorEmpleado(_idEmpleado, _idCanal);
+            Globals.WHITE_LIST_BLOQUEO_SIN_INVENTARIO = new ArrayCollection();
+            var whiteList:String = String(Globals.CONFIG['WhiteListBloqueoSinInventario']);
+            if (whiteList != null) {
+                for each(var cat:String in whiteList.split(",")) {
+                    var idCat:Number = Number(cat);
+                    if (!isNaN(idCat)) {
+                        Globals.WHITE_LIST_BLOQUEO_SIN_INVENTARIO.addItem(idCat);
+                    }
+
+                }
+            }
+        }
+
+        public function consultarUniformes(event:Event = null):void {
+            enviarButton.enabled = false;
+            seleccionRowCount = 0;
+            total = 0;
+            items = new ArrayCollection();
+            itemsSeleccionados = new ArrayCollection();
+            if (tiendaSeleccionada == null || isNaN(tiendaSeleccionada.num)) {
+                return;
+            }
+            var idTienda:Number = tiendaSeleccionada.num;
+            currentState = "CargandoKitUniforme";
+            solicitudUniforme.consultaUniformes(_idEmpleado, _idCanal, _idFuncion, _idGenero, idTienda);
+        }
+
+        private function consultaUniformesHandler(event:ResultEvent):void {
+            if (!MensajeUtil.validaServiceResponse(event, cerrarSolicitud)) {
+                return;
+            }
+            if (event.result.kitUniforme == null || event.result.kitUniforme.idKit == null) {
+                var msg:String = "Por el momento no se ha definido un kit para el empleado " + this.idEmpleado
+                        + "\nCanal: " + this.canal
+                        + "\nFunción: " + this.idFuncion;
+                var titulo:String = "No se tiene kit definido.";
+                MensajeWindow.show(msg, titulo, MensajeWindow.LEVEL_WARN, MensajeWindow.OK, cerrarSolicitud);
+                return;
+            }
+
+            semanasDescto = event.result.kitUniforme.semanasDescto;
+
+            for each(var item:Object in event.result.kitUniforme.items) {
+                var itemUniforme:ItemUniforme = new ItemUniforme();
+                itemUniforme.cantidad = item.cantidad;
+                itemUniforme.descripcion = item.descripcion;
+                itemUniforme.flagValido = item.flagValido;
+                itemUniforme.imagenes = item.imagenes;
+                itemUniforme.motivo = item.motivo;
+                itemUniforme.precioSubkit = item.precioSubkit;
+                itemUniforme.tallas = item.tallas;
+                itemUniforme.tallaSeleccionada = -1;
+                itemUniforme.aplicaReposicion = item.aplicaReposicion;
+                itemUniforme.subkitsIds = item.subkitsIds;
+                itemUniforme.idCategoria = Number(ArrayCollection(item.idCategorias).getItemAt(0));
+                itemUniforme.tipoSolicitud = item.tipoSolicitud;
+                itemUniforme.guiaTallas = item.guiaTallas;
+                if (event.result.kitUniforme.esPrimerKit && item.flagObligatorio && itemUniforme.flagValido) {
+                    itemUniforme.bloqueado = true;
+                    addItem(itemUniforme);
+                } else {
+                    items.addItem(itemUniforme);
+                }
+
+
+            }
+            if (event.result.kitUniforme.flagMostrarGuia) {
+                var archivoGuia:String = StringUtil.substitute(event.result.kitUniforme.archivoGuia, generoGuia[_idGenero]);
+                mostrarGuiaDeTallas(archivoGuia);
+            }
+
+            currentState = "AfterLoadInfo";
+        }
+
+        private function consultaTiendasHandler(event:ResultEvent):void {
+            if (!MensajeUtil.validaServiceResponse(event, cerrarSolicitud)) {
+                return;
+            }
+            tiendas = event.result.sucursales.sucursalPorEmpleado;
+            if (event.result.sucursales.todasLasSucursales != null) {
+                tiendas.addAll(event.result.sucursales.todasLasSucursales);
+            }
+
+            if (tiendas.length == 1) {
+                tiendaSeleccionada = tiendas.getItemAt(0);
+                tiendaComboBox.selectedIndex = 0;
+                tiendaStaticText.text = tiendaSeleccionada.num + " - " + tiendaSeleccionada.nombre;
+                tiendaComboBox.visible = false;
+                tiendaStaticText.visible = true;
+                consultarUniformes();
+            } else {
+                tiendaStaticText.visible = false;
+                tiendaComboBox.visible = true;
+                currentState = "SeleccionarTienda";
+            }
+        }
+
+        private function faultHandler(event:FaultEvent):void {
+            MensajeUtil.mostrarMensajeFault(event, cerrarSolicitud);
+        }
+
+        private static function labelTienda(tienda:Object):String {
+            if (tienda != null && !(tienda is String)) {
+                return tienda.num + " - " + tienda.nombre;
+            }
+            return "";
+        }
+
+        private function confirmarGrabarPedido(event:MouseEvent):void {
+            var vResult:ValidationResultEvent;
+            vResult = tiendaValidator.validate(tiendaComboBox.selectedIndex);
+            this.dispatchEvent(new Event("validarTallas"));
+
+            var total:Number = Number("0.00");
+            var msg:String = "";
+            if (vResult.type == ValidationResultEvent.INVALID) {
+                showToolTip("Por favor selecciona una tienda.", tiendaComboBox);
+                return;
+            }
+            for (var i:String in itemsSeleccionados) {
+                var item:Object;
+                if (itemsSeleccionados.hasOwnProperty(i)) {
+                    item = itemsSeleccionados[i];
+                } else {
+                    continue;
+                }
+                if (item.tallaSeleccionada < 0) {
+                    return
+                }
+                if (Globals.CONFIG['bloquearSolicitudSinInventario'] == "true") {
+                    for each(var pieza:Object in item.tallas[item.tallaSeleccionada].piezas) {
+                        if (pieza.inventario == 0 && !Globals.WHITE_LIST_BLOQUEO_SIN_INVENTARIO.contains(pieza.categoria)) {
+                            return;
+                        }
+                    }
+                }
+                var strTalla:String = item.tallas[item.tallaSeleccionada].tallaClave.toLowerCase();
+                if (strTalla.indexOf("talla") == -1) {
+                    strTalla = "talla " + strTalla;
+                }
+                msg = msg.concat(item.cantidad
+                        + " " + item.descripcion.toLowerCase()
+                        + " " + strTalla
+                        + " $" + item.precioSubkit + "\n");
+                total += item.precioSubkit;
+            }
+            msg = msg.concat("Total: $" + total
+                    + "\n$" + Math.round(total / semanasDescto)
+                    + " durante " + semanasDescto + " semanas.");
+            Alert.show(msg, "Confirmar pedido", Alert.OK | Alert.CANCEL, this, confirmacionHandler, iconQuestion);
+
+
+        }
+
+        private function confirmacionHandler(event:CloseEvent):void {
+            if (event.detail == Alert.OK) {
+                enviarButton.enabled = false;
+                currentState = "GrabandoPedido";
+                var paramItems:ArrayCollection = new ArrayCollection();
+                for (var i:String in itemsSeleccionados) {
+                    var item:Object;
+                    if (itemsSeleccionados.hasOwnProperty(i)) {
+                        item = itemsSeleccionados[i];
+                    } else {
+                        continue;
+                    }
+                    for each (var pieza:Object in item.tallas[item.tallaSeleccionada].piezas) {
+                        var itemSolicitud:SolicitudDto = new SolicitudDto();
+                        itemSolicitud.empleado = _idEmpleado;
+                        itemSolicitud.cia = _idCanal;
+                        itemSolicitud.pais = _pais;
+                        itemSolicitud.funcion = _idFuncion;
+                        itemSolicitud.genero = _idGenero;
+                        itemSolicitud.tienda = tiendaSeleccionada.num;
+                        itemSolicitud.sku = pieza.sku;
+                        itemSolicitud.cantidad = pieza.cantidad;
+                        itemSolicitud.tipoSolicitud = item.tipoSolicitud;
+                        paramItems.addItem(itemSolicitud);
+                    }
+
+                }
+                grabaPedido.grabaPedido(paramItems);
+            }
+        }
+
+        private function seleccionTienda():void {
+            if (tiendaComboBox.selectedIndex >= 0) {
+                tiendaSeleccionada = tiendaComboBox.selectedItem;
+                tiendaComboBox.errorString = "";
+                consultarUniformes();
+            } else {
+                tiendaSeleccionada = null;
+            }
+        }
+
+        private function grabaPedidoHandler(event:ResultEvent):void {
+            if (!MensajeUtil.validaServiceResponse(event)) {
+                enviarButton.enabled = true;
+                currentState = "AfterLoadInfo";
+            } else {
+                flagSolicitudGenerada = true;
+
+                var mensaje:String = StringUtil.substitute(
+                        "Tu n\u00FAmero de folio es el {0}, tus pedidos son {1} de la tienda {2} puedes darle seguimiento en Estatus de mi Uniforme",
+                        event.result.folio,
+                        event.result.pedidos,
+                        event.result.tienda);
+                Alert.show(mensaje, "¡Felicidades! Ya solicitaste tu uniforme.", Alert.OK, this, cerrarSolicitud, iconSuccess);
+            }
+
+        }
+
+        private function cerrarSolicitud(event:CloseEvent = null):void {
+            if (flagSolicitudGenerada) {
+                this.dispatchEvent(new Event("solicitudGenerada", true));
+            } else {
+                this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+            }
+
+        }
+
+        public function actualizaTotal():void {
+            var sum:Number = 0;
+            for (var i:String in itemsSeleccionados) {
+                var item:ItemUniforme;
+                if (itemsSeleccionados.hasOwnProperty(i)) {
+                    item = itemsSeleccionados[i];
+                } else {
+                    continue;
+                }
+                sum += item.precioSubkit;
+            }
+            total = sum;
+        }
+
+        public function showToolTip(msg:String, target:DisplayObject, errorTipBorderStyle:String = "errorTipRight"):void {
+            if (target.visible) {
+                var point:Point = new Point(0, 0);
+                var globalPoint:Point = target.localToGlobal(point);
+
+                var x:Number;
+                var y:Number;
+
+                if (errorTipBorderStyle == "errorTipRight") {
+                    x = globalPoint.x + target.width;
+                    y = globalPoint.y;
+                } else if (errorTipBorderStyle == "errorTipAbove") {
+                    x = globalPoint.x;
+                    y = globalPoint.y - 30;
+                } else if (errorTipBorderStyle == "errorTipBelow") {
+                    x = globalPoint.x;
+                    y = globalPoint.y + target.height;
+                } else {
+                    return;
+                }
+
+                var tip:ToolTip = ToolTipManager.createToolTip(
+                        msg,
+                        x,
+                        y,
+                        errorTipBorderStyle,
+                        this) as ToolTip;
+                toolTips.addItem(tip);
+                var t:Timer = new Timer(3000, 1);
+                t.addEventListener(TimerEvent.TIMER_COMPLETE, onTimerComplete(tip));
+                t.start();
+            }
+        }
+
+        private function onTimerComplete(tip:ToolTip):Function {
+            return function (e:Event):void {
+                toolTips.removeItem(tip);
+                try {
+                    ToolTipManager.destroyToolTip(tip);
+                } catch (error:ArgumentError) {
+
+                }
+            }
+        }
+
+        public function removeAllTooltips():void {
+            while (toolTips.length > 0) {
+                var tip:ToolTip = toolTips.removeItemAt(0) as ToolTip;
+                ToolTipManager.destroyToolTip(tip);
+            }
+        }
+
+        public function addItem(item:Object):void {
+            for each (var aux:ItemUniforme in itemsSeleccionados) {
+                if (aux.idCategoria == item.idCategoria) {
+                    var msg:String = StringUtil.substitute("Ya tienes seleccionado un item de la misma categoria.\nPara seleccionar este elemento elimina {0} de tu solicitud.", aux.descripcion);
+                    MensajeWindow.show(msg, "Validar solicitud", MensajeWindow.LEVEL_WARN);
+                    return;
+                }
+            }
+            item.seleccionado = true;
+            item.tallaSeleccionada = -1;
+            items.removeItem(item);
+            itemsSeleccionados.addItemAt(item, 0);
+            seleccionRowCount = itemsSeleccionados.length;
+            actualizaTotal();
+            if (item.guiaTallas != null) {
+                mostrarGuiaTallasPorItem(item);
+
+            }
+        }
+
+        public function eliminarItem(item:Object):void {
+            item.seleccionado = false;
+            itemsSeleccionados.removeItem(item);
+            items.addItem(item);
+            seleccionRowCount = itemsSeleccionados.length;
+            actualizaTotal();
+        }
+
+        private function playSpinner():void {
+            spinner.play();
+        }
+
+        private function stopSpinner():void {
+            spinner.stop();
+        }
+
+        private function mostrarGuiaDeTallas(archivoGuia:String):void {
+            var comoElegirTalla:ComoElegirTalla = ComoElegirTalla(
+                    PopUpManager.createPopUp(
+                            UIComponent(FlexGlobals.topLevelApplication),
+                            ComoElegirTalla,
+                            false));
+
+            comoElegirTalla.image.source = "img/" + archivoGuia;
+            comoElegirTalla.width = this.width - 30;
+            comoElegirTalla.height = this.height;
+            comoElegirTalla.addEventListener(CloseEvent.CLOSE, cerrarPopUp);
+            PopUpManager.centerPopUp(comoElegirTalla);
+        }
+
+        private static function cerrarPopUp(event:CloseEvent):void {
+            PopUpManager.removePopUp(IFlexDisplayObject(event.target));
+        }
+
+        public function solicitaReposicion(data:ItemUniforme):void {
+            //TODO: Consultar si el item tiene accesorios que se puedan solicitar
+            //-----------------------------------
+            var flagAccesorios:Boolean = false;
+            //-----------------------------------
+            if (flagAccesorios) {
+                var accesorios:Accesorios = new Accesorios();
+                accesorios.items = new ArrayCollection();
+                accesorios.items.addItem(data);
+
+                //+++++++++++++++++++++++++++++
+                //TODO: Consultar accesorios
+                var mica:ItemUniforme = new ItemUniforme();
+                mica.imagenes = new ArrayCollection(['mica.jpg']);
+                mica.descripcion = "Mica";
+                mica.flagValido = true;
+                mica.idCategoria = 999;
+                mica.cantidad = 1;
+                mica.precioSubkit = 0;
+                mica.tallas = new ArrayCollection([{idTalla: 0, tallaClave: "Unitalla"}]);
+                accesorios.items.addItem(mica);
+                //+++++++++++++++++++++++++++++
+
+                accesorios.open(UIComponent(FlexGlobals.topLevelApplication), true);
+                accesorios.addEventListener(PopUpEvent.CLOSE, accesoriosCloseHandler);
+                PopUpManager.centerPopUp(accesorios);
+            } else {
+                abrirPanelSolicitudReposicion(data);
+            }
+
+        }
+
+        public function abrirPanelSolicitudReposicion(data:ItemUniforme):void {
+            var solicitaReposicion:SolicitudReposicion = SolicitudReposicion(
+                    PopUpManager.createPopUp(
+                            UIComponent(FlexGlobals.topLevelApplication),
+                            SolicitudReposicion,
+                            true
+                    )
+            );
+            solicitaReposicion.datos = data;
+            solicitaReposicion.idEmpleado = _idEmpleado;
+            solicitaReposicion.nombreEmpleado = _nombreEmpleado;
+            solicitaReposicion.addEventListener(CloseEvent.CLOSE, cerrarPopUp);
+            solicitaReposicion.addEventListener(SolicitudReposicion.REPOSICION_GENERADA, consultarUniformes);
+            PopUpManager.centerPopUp(solicitaReposicion);
+        }
+
+        private function accesoriosCloseHandler(event:PopUpEvent):void {
+            if (event.data == null) {
+                return;
+            }
+            var seleccion:ItemUniforme = event.data;
+            if (seleccion.flagValido) {
+                addItem(event.data);
+            } else {
+                abrirPanelSolicitudReposicion(seleccion);
+            }
+        }
+
+        public function guardaSolicitudSinInventario(pieza:Object):void {
+            solicitudUniforme.guardaSolicitudSinInventario(_idEmpleado, pieza.idSubkit, pieza.sku, tiendaSeleccionada.num);
+        }
+
+        public function mostrarGuiaTallasPorItem(item:Object):void {
+            var popUpGuia:TitleWindow = new TitleWindow();
+            popUpGuia.addEventListener(CloseEvent.CLOSE, cerrarPopUp);
+            popUpGuia.title = "Guía de tallas de " + item.descripcion;
+            var imagen:Image = new Image();
+            imagen.source = "img/" + item.guiaTallas;
+            popUpGuia.addElement(imagen);
+            popUpGuia.addEventListener(ResizeEvent.RESIZE, function (evt:ResizeEvent):void {
+                PopUpManager.centerPopUp(popUpGuia);
+            });
+            var aceptarBtn:Button = new Button();
+            aceptarBtn.label = "Aceptar";
+            aceptarBtn.addEventListener(MouseEvent.CLICK, function (evt:MouseEvent):void {
+                popUpGuia.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+            });
+            aceptarBtn.setStyle('chromeColor', '0x0000FF');
+            aceptarBtn.setStyle('color', '0xFFFFFF');
+            popUpGuia.controlBarContent = [aceptarBtn];
+            popUpGuia.controlBarLayout = new HorizontalLayout();
+            HorizontalLayout(popUpGuia.controlBarLayout).horizontalAlign = "right";
+            HorizontalLayout(popUpGuia.controlBarLayout).padding = 5;
+            PopUpManager.addPopUp(popUpGuia, UIComponent(FlexGlobals.topLevelApplication), true);
+        }
+        ]]>
+    </fx:Script>
+
+    <containers:rightControlContent>
+        <components:BotonAyuda numEmpleado="{_idEmpleado}" nombreEmpleado="{_nombreEmpleado}"/>
+    </containers:rightControlContent>
+
+    <containers:leftControlContent>
+        <s:Image xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+                 source="@Embed(source='/assets/book_info.png')" left="5" top="3"
+                 useHandCursor="true"
+                 mouseChildren="false"
+                 buttonMode="true"
+                 click="{this.dispatchEvent(new Event('manualDeImagen'))}"
+                 visible="{_flagManualImagen}"/>
+    </containers:leftControlContent>
+
+    <containers:layout>
+        <s:VerticalLayout horizontalAlign="center" gap="0"/>
+    </containers:layout>
+
+    <s:HGroup id="tiendaGroup"
+             visible="false"
+             includeInLayout="false"
+             showEffect="{fadeIn}"
+             minHeight="25"
+             verticalAlign="middle"
+             width="100%"
+             horizontalAlign="center">
+        <s:Label text="Tienda receptora:"/>
+        <s:Group>
+            <s:ComboBox id="tiendaComboBox" width="335"
+                        labelFunction="labelTienda"
+                        prompt="- Selecciona o captura la tienda Ekt o SyR -"
+                        change="seleccionTienda()"
+                        dataProvider="{tiendas}">
+            </s:ComboBox>
+            <s:Label id="tiendaStaticText"
+                     fontWeight="bold"
+                     textAlign="center"
+                     verticalAlign="middle" height="100%"/>
+        </s:Group>
+    </s:HGroup>
+
+    <s:HGroup id="spinnerGroup"
+              verticalAlign="middle"
+              horizontalAlign="center"
+              width="100%" height="100%">
+        <assets:Spinner id="spinner" tickColor="#66aaff"/>
+        <s:Label id="spinnerLabel" text="Cargando datos..."/>
+    </s:HGroup>
+
+    <s:VGroup id="seleccionPrendasBox"
+             visible="false"
+             includeInLayout="false"
+             showEffect="{fadeIn}"
+             width="100%" height="100%"
+             gap="0">
+        <s:Panel width="100%"
+                 dropShadowVisible="false"
+                 title="Selecciona las prendas que vas a solicitar"
+                 skinClass="skins.CarruselSkin" height="50%">
+            <s:List id="itemList"
+                    contentBackgroundAlpha="0"
+                    borderAlpha="0"
+                    textAlign="center"
+                    dataProvider="{items}"
+                    width="100%" height="100%"
+                    useVirtualLayout="false"
+                    preventSelection="true">
+                <s:layout>
+                    <s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" paddingTop="0"/>
+                </s:layout>
+                <s:itemRenderer>
+                    <fx:Component>
+                        <s:ItemRenderer maxHeight="155" moveEffect="{moveEff}" height="100%" autoDrawBackground="false">
+                            <fx:Declarations>
+                                <mx:Move id="moveEff" duration="500"/>
+                            </fx:Declarations>
+                            <fx:Script>
+                                    <![CDATA[
+                                import model.ItemUniforme;
+
+                                private function addItem():void {
+                                    outerDocument.addItem(data);
+                                }
+
+                                private static function escapeMotivo(str:String):String {
+                                    var pattern:RegExp = /\\n/g;
+                                    return str.replace(pattern, "\n");
+                                }
+
+                                private function abrirReposicion():void {
+                                    outerDocument.solicitaReposicion(ItemUniforme(data));
+
+                                }
+                                ]]>
+                            </fx:Script>
+                            <s:Group width="100%" height="100%">
+                                <s:VGroup horizontalAlign="center"
+                                          gap="3"
+                                          creationCompleteEffect="{outerDocument.fadeIn}"
+                                          top="0" left="10" right="10"
+                                          bottom="0" paddingLeft="0">
+                                    <s:Label text="{data.descripcion}" color="white" maxWidth="{imagenList.width}"
+                                             maxDisplayedLines="1"/>
+                                    <s:Group id="itemBox"
+                                             height="100%">
+                                        <s:Rect top="0" left="0" bottom="0" right="0" radiusX="10" radiusY="10">
+                                            <s:stroke>
+                                                <s:SolidColorStroke color="0xF1F1F1"/>
+                                            </s:stroke>
+                                            <s:fill>
+                                                <s:SolidColor color="0xFFFFFF"/>
+                                            </s:fill>
+                                        </s:Rect>
+
+                                        <s:List id="imagenList"
+                                                preventSelection="true"
+                                                borderAlpha="0"
+                                                alpha="{data.flagValido ? 1 : 0.5}"
+                                                height="100%"
+                                                dataProvider="{data.imagenes}"
+                                                bottom="5" top="5" left="10" right="10">
+                                            <s:layout>
+                                                <s:HorizontalLayout verticalAlign="middle" horizontalAlign="center"/>
+                                            </s:layout>
+                                            <s:itemRenderer>
+                                                <fx:Component>
+                                                    <s:ItemRenderer height="100%"
+                                                                    autoDrawBackground="false">
+                                                    <s:Image id="image" source="carrusel/{data}"
+                                                             width="100" height="100%"
+                                                                 fillMode="scale"
+                                                                 horizontalAlign="center"
+                                                                 verticalAlign="middle"
+                                                                 smooth="true"/>
+                                                    </s:ItemRenderer>
+                                                </fx:Component>
+                                            </s:itemRenderer>
+                                        </s:List>
+                                    </s:Group>
+                                    <s:Button label="Reposición" fontSize="10"
+                                              visible="{(!data.flagValido &amp;&amp; data.aplicaReposicion)}"
+                                              chromeColor="blue"
+                                              color="0xFFFFFF" click="abrirReposicion()"/>
+                                </s:VGroup>
+                                <s:Group width="100%" top="5" bottom="0">
+                                    <s:Button chromeColor="blue" width="22"
+                                               icon="@Embed(source='/assets/icon_add.png')"
+                                               click="addItem()" visible="{data.flagValido}"
+                                               top="0" right="0"
+                                               cornerRadius="11"/>
+                                    <s:Label text="{escapeMotivo(data.motivo)}"
+                                             visible="{!data.flagValido}"
+                                             right="15" left="15" top="10" bottom="20"
+                                             maxWidth="{itemBox.width}"
+                                             verticalAlign="middle"
+                                             textAlign="center"
+                                             lineBreak="toFit"
+                                             fontWeight="bold"
+                                             fontSize="10"/>
+                                </s:Group>
+                            </s:Group>
+                        </s:ItemRenderer>
+                    </fx:Component>
+                </s:itemRenderer>
+            </s:List>
+        </s:Panel>
+        <s:Panel title="Prendas seleccionadas"
+                 width="100%"
+                 dropShadowVisible="false"
+                 height="50%"
+                 skinClass="skins.SolicitudItemsSkin">
+            <s:Scroller top="0" right="0" left="0" bottom="0">
+                <s:VGroup top="0" right="0" left="0" bottom="0">
+                    <s:List id="seleccionList" dataProvider="{itemsSeleccionados}"
+                            useVirtualLayout="false" borderVisible="false" width="100%" height="100%">
+                        <s:layout>
+                            <s:VerticalLayout horizontalAlign="left"
+                                              useVirtualLayout="false"
+                                              requestedRowCount="{seleccionRowCount}"
+                                              gap="1"/>
+                        </s:layout>
+                        <s:itemRenderer>
+                            <fx:Component>
+                                <s:ItemRenderer creationComplete="init()"
+                                                creationCompleteEffect="{outerDocument.fadeIn}"
+                                                width="100%" moveEffect="{moveSelectedItem}"
+                                                autoDrawBackground="false">
+                                    <s:layout>
+                                        <s:HorizontalLayout verticalAlign="middle" paddingLeft="10" paddingRight="10"
+                                                            paddingTop="3" paddingBottom="3"/>
+                                    </s:layout>
+
+                                    <fx:Declarations>
+                                        <s:Parallel id="eliminarEffect">
+                                            <s:Rotate angleFrom="0"
+                                                      angleTo="-90"
+                                                      target="{removeButton}"
+                                                      autoCenterTransform="true"/>
+                                            <s:Move3D xFrom="300"
+                                                      xTo="0"
+                                                      target="{eliminarButton}"/>
+                                            <s:Fade alphaFrom="0" alphaTo="1"
+                                                    target="{eliminarButton}"/>
+                                        </s:Parallel>
+                                        <s:Parallel id="reverseEffect">
+                                            <s:Rotate angleFrom="-90"
+                                                      angleTo="0"
+                                                      target="{removeButton}"
+                                                      autoCenterTransform="true"/>
+                                            <s:Move3D xFrom="0"
+                                                      xTo="300"
+                                                      target="{eliminarButton}"/>
+                                            <s:Fade alphaFrom="1" alphaTo="0"
+                                                    target="{eliminarButton}"/>
+                                        </s:Parallel>
+                                        <mx:Move id="moveSelectedItem"/>
+                                        <mx:NumberValidator id="tallaValidator"
+                                                            source="{tallaDownList}"
+                                                            property="selectedIndex"
+                                                            minValue="0"
+                                                            lowerThanMinError=" "/>
+                                    </fx:Declarations>
+                                    <fx:Script>
+                                    <![CDATA[
+                                        import mx.controls.ToolTip;
+                                        import mx.events.ValidationResultEvent;
+
+                                        import utils.StringUtils;
+
+                                        private var errorTip:ToolTip;
+
+                                        private function init():void {
+                                            outerDocument.addEventListener("validarTallas", validaTalla);
+                                        }
+
+                                        private function validaTalla(evt:Event):void {
+                                            if (data == null || !data.seleccionado) {
+                                                return;
+                                            }
+                                            var vResult:ValidationResultEvent = tallaValidator.validate();
+                                            if (vResult.type == ValidationResultEvent.INVALID) {
+                                                outerDocument.showToolTip("Por favor selecciona una talla.", tallaDownList);
+                                            } else {
+                                                validaInventario();
+                                            }
+                                        }
+
+                                        private function seleccionaTalla():void {
+                                            outerDocument.removeAllTooltips();
+                                            data.tallaSeleccionada = tallaDownList.selectedIndex;
+                                            validaInventario();
+                                            tallaDownList.errorString = "";
+                                        }
+
+                                        private function showEliminar():void {
+                                            if (!eliminarEffect.isPlaying && !reverseEffect.isPlaying) {
+                                                if (eliminarButton.alpha == 0) {
+                                                    eliminarEffect.play();
+                                                } else {
+                                                    reverseEffect.play();
+                                                }
+
+                                            }
+                                        }
+
+                                        private function eliminarItem(item:Object):void {
+                                            outerDocument.eliminarItem(item);
+                                        }
+
+                                        private function validaInventario():void {
+                                            if (Globals.CONFIG['bloquearSolicitudSinInventario'] == "true") {
+                                                for each (var pieza:Object in tallaDownList.selectedItem.piezas) {
+                                                    if (pieza.inventario <= 0 && !Globals.WHITE_LIST_BLOQUEO_SIN_INVENTARIO.contains(pieza.categoria)) {
+                                                        var msg:String = "Por el momento no se tiene inventario.\nTu selección ha sido notificada al responsable.";
+                                                        tallaDownList.errorString = " ";
+                                                        outerDocument.showToolTip(msg, tallaDownList);
+                                                        outerDocument.guardaSolicitudSinInventario(pieza);
+                                                        return;
+                                                    }
+                                                }
+                                            }
+                                            tallaDownList.errorString = "";
+                                        }
+                                        ]]>
+                                    </fx:Script>
+                                    <s:HGroup width="25%" verticalAlign="middle">
+                                        <s:VGroup width="25" horizontalAlign="center">
+                                            <s:Button id="removeButton"
+                                                      chromeColor="red"
+                                                      icon="@Embed(source='/assets/icon_remove.png')"
+                                                      color="white"
+                                                      width="22"
+                                                      fontWeight="normal"
+                                                      click="showEliminar()"
+                                                      cornerRadius="11"
+                                                      visible="{!data.bloqueado}"/>
+                                        </s:VGroup>
+                                        <s:List preventSelection="true"
+                                                borderColor="white"
+                                                minWidth="110"
+                                                width="100%"
+                                                dataProvider="{data.imagenes}">
+                                            <s:layout>
+                                                <s:HorizontalLayout verticalAlign="middle" horizontalAlign="center"/>
+                                            </s:layout>
+                                            <s:itemRenderer>
+                                                <fx:Component>
+                                                    <s:ItemRenderer autoDrawBackground="false">
+                                                    <s:layout>
+                                                            <s:HorizontalLayout horizontalAlign="center"/>
+                                                        </s:layout>
+                                                        <s:Image source="carrusel/{data}"
+                                                                 width="50" height="50"
+                                                                 horizontalAlign="center"
+                                                                 smooth="true"/>
+                                                    </s:ItemRenderer>
+                                                </fx:Component>
+                                            </s:itemRenderer>
+                                        </s:List>
+                                    </s:HGroup>
+                                    <s:Form minWidth="170" width="30%" skinClass="skins.FormSkin">
+                                        <s:layout>
+                                            <s:FormLayout gap="3"/>
+                                        </s:layout>
+                                        <s:FormItem label="Descripción:" skinClass="skins.FormItemSkin">
+                                            <s:Label text="{data.descripcion}"/>
+                                        </s:FormItem>
+                                        <s:FormItem label="Cantidad:" skinClass="skins.FormItemSkin">
+                                            <s:Label text="{data.cantidad}"/>
+                                        </s:FormItem>
+                                        <s:FormItem label="Precio:" skinClass="skins.FormItemSkin">
+                                            <s:Label text="{StringUtils.currencyFormat(data.precioSubkit)}"/>
+                                        </s:FormItem>
+
+                                    </s:Form>
+                                    <s:Form id="tallaForm" skinClass="skins.FormSkin" width="30%">
+                                        <s:FormItem label="Talla:" skinClass="skins.FormItemSkin">
+                                            <s:DropDownList id="tallaDownList" prompt="- Selecciona -"
+                                                            labelField="tallaClave" change="seleccionaTalla()"
+                                                            textAlign="center" width="140"
+                                                            dataProvider="{data.tallas}">
+                                            </s:DropDownList>
+                                        </s:FormItem>
+                                    </s:Form>
+                                    <s:Group width="15%">
+                                        <s:Button id="eliminarButton"
+                                                  chromeColor="red"
+                                                   label="Eliminar"
+                                                   alpha="0"
+                                                   color="white"
+                                                   fontWeight="normal"
+                                                   click="eliminarItem(data)"
+                                                   right="5"/>
+                                    </s:Group>
+
+                                </s:ItemRenderer>
+                            </fx:Component>
+                        </s:itemRenderer>
+                    </s:List>
+                </s:VGroup>
+            </s:Scroller>
+
+        </s:Panel>
+    </s:VGroup>
+
+    <containers:controlBarLayout>
+        <s:HorizontalLayout paddingLeft="10" paddingRight="10" paddingTop="3" paddingBottom="3"
+                            gap="10" horizontalAlign="right" verticalAlign="middle"/>
+    </containers:controlBarLayout>
+    <containers:controlBarContent>
+        <s:Label text="Total: {StringUtils.currencyFormat(total)}" fontWeight="bold"
+                 visible="{itemsSeleccionados.length > 0}"/>
+        <s:Button id="enviarButton"
+                   label="Enviar solicitud"
+                   click="confirmarGrabarPedido(event)"
+                   enabled="{itemsSeleccionados.length > 0}"
+                   chromeColor="blue"
+                   color="0xFFFFFF"/>
+    </containers:controlBarContent>
+
+</containers:UniformesTitleWindow>

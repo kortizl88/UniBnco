@@ -1,0 +1,3 @@
+<orion-web-app>
+    <web-app-class-loader search-local-classes-first="true"></web-app-class-loader>
+</orion-web-app>

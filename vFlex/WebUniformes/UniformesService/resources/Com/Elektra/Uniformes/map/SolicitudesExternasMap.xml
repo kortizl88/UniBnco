@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Com.Elektra.Uniformes.map.SolicitudesExternasMap">
+
+    <insert id="guardarSolicitudExterna" parameterType="Com.Elektra.Uniformes.Dto.SolicitudesExternasDto"
+            statementType="CALLABLE">
+        {call RHEKT.PAWEBUNIFORMES.SPINSERTASOLICEXT(
+        #{idEmpleado, mode=IN, jdbcType=INTEGER},
+        #{idCategoria, mode=IN, jdbcType=INTEGER},
+        #{ultimaRemision, mode=IN, jdbcType=DATE},
+        #{origen, mode=IN, jdbcType=INTEGER}
+        )}
+    </insert>
+
+
+</mapper>

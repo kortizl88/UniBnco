@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="jquery-mobile/jquery.mobile.icons-1.4.5.css">
+    <link rel="stylesheet" href="jquery-mobile/theme-classic.css">
+    <link rel="stylesheet" href="jquery-mobile/jquery.mobile.structure-1.4.5.css">
+    <link rel="stylesheet" href="css/comun.css">
+    <link rel="stylesheet" href="css/tooltipAzul.css">
+    <link rel="stylesheet" href="css/estatus.css">
+
+    <script src="jquery/jquery-2.1.4.min.js"></script>
+    <script src="jquery-mobile/jquery.mobile-1.4.5.js"></script>
+    <script src="js/mustache.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/estatus.js"></script>
+    <title>Estatus de mi uniforme</title>
+</head>
+<body>
+<script id="selectFoliosTemplate" type="x-template">
+    {{#folios}}
+    <option value="{{folio}}">{{fecha}}</option>
+    {{/folios}}
+</script>
+<script id="estatusPedidoTemplate" type="x-template">
+    <div class="estatusPanel">
+        <div class="tituloPanel">Resumen de mi solicitud</div>
+        <table>
+            <thead>
+            <tr>
+                <td>Folio</td>
+                <td>Tienda receptora</td>
+                <td>Nombre de la tienda</td>
+                <td>Fecha de mi solicitud</td>
+                <td>Estatus General</td>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>{{folioPedido}}</td>
+                <td>{{noTienda}}</td>
+                <td>{{nombreTienda}}</td>
+                <td>{{fecha}}</td>
+                <td>{{descripcionEstatus}}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="estatusPanel">
+        <div class="tituloPanel">Detalle de mi solicitud</div>
+        <table>
+            <thead>
+            <tr>
+                <td>Pedido</td>
+                <td>SKU</td>
+                <td>Descripci&oacute;n</td>
+                <td>Total SKU</td>
+                <td>Remisi&oacute;n</td>
+                <td>Estatus</td>
+                <td>Fecha</td>
+            </tr>
+            </thead>
+            <tbody>
+            {{#detalle}}
+            <tr>
+                <td>{{noPedido}}</td>
+                <td>{{sku}}</td>
+                <td>{{descripcion}}</td>
+                <td>{{totalSku}}</td>
+                <td>{{numRemision}}</td>
+                <td>{{estatusDesc}}</td>
+                <td>{{fechaEstatus}}</td>
+            </tr>
+            {{/detalle}}
+            </tbody>
+        </table>
+    </div>
+</script>
+<div data-role="page" data-theme="c">
+    <div id="divMain" data-role="main">
+        <div id="divTabla" class="vgroup"></div>
+        <div id="divImagenesEstatus" class="hgroup">
+            <div id="divEstatusSolicitud">
+                <button id="estatusSolicitud" class="ui-btn ui-corner-all btnAyuda" rel="tooltip"
+                        title="Se ha generado un folio de tus pedidos en Sistema de Uniformes">
+                    <img id="imgEstatusSolicitud" src="img/estatus/estatusSolicitud.png">
+                </button>
+                <div class="lbl">
+                    <img src="img/estatus/paloma.png">
+
+                    <div>Solicitado</div>
+                </div>
+            </div>
+            <div id="flechaEstatusCD"><img src="img/estatus/flechaEstatus.png" class="imgFlecha"></div>
+            <div id="divEstatusCD">
+                <button id="estatusCD" class="ui-btn ui-corner-all btnAyuda" rel="tooltip"
+                        title="El centro de distribución se encuentra procesando tus pedidos">
+                    <img id="imgEstatusCD" src="img/estatus/estatusCD.gif">
+                </button>
+                <div class="lbl">
+                    <img src="img/estatus/paloma.png">
+
+                    <div class="lbl">CD</div>
+                </div>
+            </div>
+            <div id="flechaEstatusEnCamino"><img src="img/estatus/flechaEstatus.png" class="imgFlecha"></div>
+            <div id="divEstatusEnCamino">
+                <button id="estatusEnCamino" class="ui-btn ui-corner-all btnAyuda" rel="tooltip"
+                        title="Tus pedidos ya están en camino a la sucursal">
+                    <img id="imgEstatusEnCamino" src="img/estatus/estatusEnCamino.gif">
+                </button>
+                <div class="lbl">
+                    <img src="img/estatus/paloma.png">
+
+                    <div class="lbl">En camino</div>
+                </div>
+            </div>
+            <div id="flechaEstatusEnTienda"><img src="img/estatus/flechaEstatus.png" class="imgFlecha"></div>
+            <div id="divEstatusEnTienda">
+                <button id="estatusEnTienda" class="ui-btn ui-corner-all btnAyuda" rel="tooltip"
+                        title="La tienda donde solicitaste tu uniforme ya ha recibido el pedido, puedes ir a recogerlo con tu huella">
+                    <img id="imgEstatusEnTienda" src="img/estatus/estatusEnTienda.png">
+                </button>
+                <div class="lbl">
+                    <img src="img/estatus/paloma.png">
+
+                    <div class="lbl">En tienda</div>
+                </div>
+            </div>
+            <div id="flechaEstatusEntregado"><img src="img/estatus/flechaEstatus.png" class="imgFlecha"></div>
+            <div id="divEstatusEntregado">
+                <button id="estatusEntregado" class="ui-btn ui-corner-all btnAyuda" rel="tooltip"
+                        title="Ya tienes tu uniforme. Te invitamos a portarlo, es parte de la imagen que mostramos a nuestros clientes">
+                    <img src="img/estatus/estatusEntregado.png">
+                </button>
+                <div class="lbl">
+                    <img src="img/estatus/paloma.png">
+
+                    <div class="lbl">Entregado</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="divFooter" data-role="footer" data-position="fixed">
+        Consultar pedidos anteriores:&nbsp;
+        <select id="selectFolio" class="ui-btn-inline">
+        </select>
+    </div>
+    <div id="alertPopup" data-role="popup" data-dismissible="false">
+        <div id="ditTituloAlert" data-role="header">
+            Titulo
+        </div>
+        <div role="main" class="ui-content" id="divMensajeAlert">
+            Mensaje
+        </div>
+        <div id="divFooterPopup" data-role="footer">
+            <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back" data-transition="flow">Aceptar</a>
+        </div>
+    </div>
+    <div id="mensajeWindow" data-role="popup" data-dismissible="false">
+        <div id="dialog_label" data-role="header">
+            Titulo
+        </div>
+        <div role="main" class="ui-content">
+            <div id="mensaje">
+                Mensaje
+            </div>
+        </div>
+        <div id="divFooterMensaje" data-role="footer">
+            <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back" data-transition="flow">Aceptar</a>
+        </div>
+    </div>
+</div>
+
+
+</body>
+</html>

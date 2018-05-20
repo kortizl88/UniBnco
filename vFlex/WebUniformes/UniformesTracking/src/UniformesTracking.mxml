@@ -1,0 +1,318 @@
+<?xml version="1.0"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+               xmlns:s="library://ns.adobe.com/flex/spark"
+               xmlns:mx="library://ns.adobe.com/flex/mx">
+    <s:layout>
+        <s:VerticalLayout padding="3"/>
+    </s:layout>
+    <fx:Style>
+        @namespace mx "library://ns.adobe.com/flex/mx";
+        @namespace s "library://ns.adobe.com/flex/spark";
+
+        s|Label {
+            fontSize: 12px;
+        }
+
+        mx|GridItem {
+            verticalAlign: middle;
+        }
+
+        .formLabel {
+            horizontalAlign: right;
+            fontWeight: bold;
+        }
+
+    </fx:Style>
+    <fx:Declarations>
+        <mx:RemoteObject id="trackingService"
+                         destination="trackingService"
+                         channelSet="{ROUtil.channelSet}"
+                         fault="trackingServiceFaultHandler(event)"
+                         showBusyCursor="true">
+            <mx:method name="consultaPedidos" result="consultaPedidosHandler(event)"/>
+            <mx:method name="generaReporte" result="generaReporteHandler(event)"/>
+        </mx:RemoteObject>
+        <s:DateTimeFormatter id="df" dateTimePattern="dd/MMM/yyyy" locale="es"/>
+        <s:NumberValidator id="numberValidator"
+                           allowNegative="false"
+                           domain="int" property="text"/>
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import dto.FiltroTrackingDto;
+
+        import mx.events.CloseEvent;
+        import mx.rpc.events.FaultEvent;
+        import mx.rpc.events.ResultEvent;
+        import mx.utils.StringUtil;
+
+        import util.MensajeUtil;
+        import util.ROUtil;
+
+        [Bindable]
+        private var pedidos:ArrayCollection;
+
+        private var reporteExcel:ByteArray;
+
+        private function consultaPedidosHandler(event:ResultEvent):void {
+            activaBotones();
+            if (!MensajeUtil.validaServiceResponse(event)) {
+                return;
+            }
+            pedidos = event.result.pedidos;
+        }
+
+        private function generaReporteHandler(event:ResultEvent):void {
+            activaBotones();
+            if (!MensajeUtil.validaServiceResponse(event)) {
+                return;
+            }
+            reporteExcel = event.result.archivo;
+            MensajeUtil.mostrarInformacion("Reporte generado.", "Se ha generado el reporte exitosamente", guardarReporte)
+        }
+
+        private function guardarReporte(event:CloseEvent):void {
+            var fileRef:FileReference = new FileReference();
+            fileRef.save(reporteExcel, "ReporteUniformes.xls");
+        }
+
+        private function trackingServiceFaultHandler(event:FaultEvent):void {
+            activaBotones();
+            MensajeUtil.mostrarMensajeFault(event);
+        }
+
+        private function ejecutarBusqueda():void {
+            var filtro:FiltroTrackingDto = crearFiltro();
+            if (filtro == null) {
+                return
+            }
+            desactivaBotones();
+            trackingService.consultaPedidos(filtro);
+        }
+
+        private function crearFiltro():FiltroTrackingDto {
+            if (validaDatos().length > 0) {
+                MensajeUtil.mostrarAlerta("Datos no válidos", "Se detectaron datos no válidos en la consulta. Favor de verificar.");
+                return null;
+            }
+            var filtro:FiltroTrackingDto = new FiltroTrackingDto();
+            filtro.idEmpleado = toNumber(idEmpleadoInput);
+            filtro.tienda = toNumber(tiendaInput);
+            filtro.pedido = toNumber(pedidoInput);
+            filtro.sku = toNumber(skuInput);
+            filtro.centroDeCostos = toNumber(ccInput);
+            filtro.remision = toNumber(remisionInput);
+            filtro.fechaSolicitudIni = solicIniInput.selectedDate;
+            filtro.fechaSolicitudFin = solicFinInput.selectedDate;
+            filtro.fechaRemisionIni = remisIniInput.selectedDate;
+            filtro.fechaRemisionFin = remisFinInput.selectedDate;
+            if (filtro.isEmpty()) {
+                MensajeUtil.mostrarInformacion("No hay datos para la búsqueda.", "Favor de ingresar los criterios de búsqueda.");
+                return null;
+            }
+            return filtro;
+        }
+
+        private function validaDatos():Array {
+            var valResult:Array = validaNumero(idEmpleadoInput);
+            valResult = valResult.concat(validaNumero(tiendaInput));
+            valResult = valResult.concat(validaNumero(pedidoInput));
+            valResult = valResult.concat(validaNumero(skuInput));
+            valResult = valResult.concat(validaNumero(ccInput));
+            valResult = valResult.concat(validaNumero(remisionInput));
+            return valResult
+        }
+
+        private function validaNumero(input:TextInput):Array {
+            var valResult:Array = [];
+            if (StringUtil.trim(input.text).length > 0) {
+                valResult = numberValidator.validateNumber(input.text, "text");
+            }
+            input.errorString = valResult.length > 0 ? "Dato no válido" : "";
+            return valResult;
+        }
+
+        private static function toNumber(input:TextInput):Number {
+            if (StringUtil.trim(input.text).length > 0) {
+                return Number(input.text);
+            } else {
+                return NaN;
+            }
+        }
+
+        private function desactivaBotones():void {
+            filtrosPanel.enabled = false;
+        }
+
+        private function activaBotones():void {
+            filtrosPanel.enabled = true;
+        }
+
+        private function borrarFiltros():void {
+            idEmpleadoInput.text = "";
+            tiendaInput.text = "";
+            pedidoInput.text = "";
+            skuInput.text = "";
+            ccInput.text = "";
+            remisionInput.text = "";
+            idEmpleadoInput.errorString = "";
+            tiendaInput.errorString = "";
+            pedidoInput.errorString = "";
+            skuInput.errorString = "";
+            ccInput.errorString = "";
+            remisionInput.text = "";
+            solicIniInput.selectedDate = null;
+            solicFinInput.selectedDate = null;
+            remisIniInput.selectedDate = null;
+            remisFinInput.selectedDate = null;
+        }
+
+        private function formatFecha(item:Object, column:GridColumn):String {
+            return df.format(item[column.dataField]);
+        }
+
+        private static function dateChooser_init(event:Event):void {
+            var dt:DateField = DateField(event.target);
+            dt.dayNames = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+            dt.monthNames = [    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre',
+                'Noviembre', 'Diciembre'];
+            dt.firstDayOfWeek = 1;
+            dt.formatString = "DD/MM/YYYY";
+        }
+
+        private function generaReporte():void {
+            var filtro:FiltroTrackingDto = crearFiltro();
+            if (filtro == null) {
+                return
+            }
+            desactivaBotones();
+            trackingService.generaReporte(filtro);
+        }
+        ]]>
+    </fx:Script>
+    <s:VGroup width="100%" height="100%" gap="3">
+        <mx:Panel id="filtrosPanel"
+                  dropShadowVisible="false"
+                  width="100%"
+                  defaultButton="{filtrarButton}"
+                  headerHeight="0"
+                  paddingTop="5" paddingLeft="5" paddingBottom="5" paddingRight="5"
+                  horizontalAlign="center">
+            <mx:Grid>
+                <mx:GridRow>
+                    <mx:GridItem styleName="formLabel">
+                        <s:Label text="Empleado:"/>
+                    </mx:GridItem>
+                    <mx:GridItem>
+                        <s:TextInput id="idEmpleadoInput" width="80"/>
+                    </mx:GridItem>
+                    <mx:GridItem styleName="formLabel">
+                        <s:Label text="Tienda:"/>
+                    </mx:GridItem>
+                    <mx:GridItem>
+                        <s:TextInput id="tiendaInput" width="80"/>
+                    </mx:GridItem>
+                    <mx:GridItem styleName="formLabel">
+                        <s:Label text="Pedido:"/>
+                    </mx:GridItem>
+                    <mx:GridItem>
+                        <s:TextInput id="pedidoInput" width="80"/>
+                    </mx:GridItem>
+                    <mx:GridItem styleName="formLabel">
+                        <s:Label text="Remisión:"/>
+                    </mx:GridItem>
+                    <mx:GridItem>
+                        <s:TextInput id="remisionInput" width="80"/>
+                    </mx:GridItem>
+                    <mx:GridItem styleName="formLabel">
+                        <s:Label text="SKU:"/>
+                    </mx:GridItem>
+                    <mx:GridItem>
+                        <s:TextInput id="skuInput" width="80"/>
+                    </mx:GridItem>
+                </mx:GridRow>
+                <mx:GridRow>
+                    <mx:GridItem colSpan="4" horizontalAlign="center" fontWeight="bold">
+                        <s:Label text="Fecha solicitud" color="#0e1afe"/>
+                    </mx:GridItem>
+                    <mx:GridItem colSpan="4" horizontalAlign="center" fontWeight="bold">
+                        <s:Label text="Fecha remisión" color="#42840e"/>
+                    </mx:GridItem>
+                </mx:GridRow>
+                <mx:GridRow>
+                    <mx:GridItem styleName="formLabel">
+                        <s:Label text="Inicio:" color="#0e1afe"/>
+                    </mx:GridItem>
+                    <mx:GridItem>
+                        <mx:DateField id="solicIniInput" creationComplete="dateChooser_init(event)"/>
+                    </mx:GridItem>
+                    <mx:GridItem styleName="formLabel">
+                        <s:Label text="Fin:" color="#0e1afe"/>
+                    </mx:GridItem>
+                    <mx:GridItem>
+                        <mx:DateField id="solicFinInput" creationComplete="dateChooser_init(event)"/>
+                    </mx:GridItem>
+                    <mx:GridItem styleName="formLabel">
+                        <s:Label text="Inicio:" color="#42840e"/>
+                    </mx:GridItem>
+                    <mx:GridItem>
+                        <mx:DateField id="remisIniInput" creationComplete="dateChooser_init(event)"/>
+                    </mx:GridItem>
+                    <mx:GridItem styleName="formLabel">
+                        <s:Label text="Fin:" color="#42840e"/>
+                    </mx:GridItem>
+                    <mx:GridItem>
+                        <mx:DateField id="remisFinInput" creationComplete="dateChooser_init(event)"/>
+                    </mx:GridItem>
+                    <mx:GridItem styleName="formLabel">
+                        <s:Label text="C. de Costos:"/>
+                    </mx:GridItem>
+                    <mx:GridItem>
+                        <s:TextInput id="ccInput" width="80"/>
+                    </mx:GridItem>
+                </mx:GridRow>
+            </mx:Grid>
+            <mx:ControlBar paddingTop="3" paddingBottom="5">
+                <s:Button id="exportarButton" label="Exportar" icon="@Embed(source='/assets/excel.png')"
+                          click="generaReporte()"/>
+                <s:Spacer width="100%"/>
+                <s:Button id="borrarButton" label="Borrar filtros" icon="@Embed(source='/assets/eraser.png')"
+                          click="borrarFiltros()"/>
+                <s:Button id="filtrarButton" label="Buscar" icon="@Embed(source='/assets/filtrar.png')"
+                          click="ejecutarBusqueda()"/>
+            </mx:ControlBar>
+        </mx:Panel>
+        <s:Scroller height="100%" width="100%">
+            <s:Group height="100%" width="100%">
+                <s:DataGrid height="100%" width="100%" minWidth="0" dataProvider="{pedidos}" fontSize="12"
+                            horizontalScrollPolicy="on">
+                    <s:columns>
+                        <mx:ArrayCollection>
+                            <s:GridColumn dataField="idEmpleado" headerText="Empleado" minWidth="80"/>
+                            <s:GridColumn dataField="nombreEmpleado" headerText="Nombre" minWidth="100"/>
+                            <s:GridColumn dataField="idFuncion" headerText="Función" minWidth="70"/>
+                            <s:GridColumn dataField="descripcionPuesto" headerText="Puesto" minWidth="100"/>
+                            <s:GridColumn dataField="centroDeCostos" headerText="C.C." minWidth="60"/>
+                            <s:GridColumn dataField="nombreCC" headerText="C.C. Nombre" minWidth="100"/>
+                            <s:GridColumn dataField="pedido" headerText="Pedido" minWidth="60"/>
+                            <s:GridColumn dataField="estatus" headerText="Estatus" minWidth="100"/>
+                            <s:GridColumn dataField="idTienda" headerText="Tienda" minWidth="60"/>
+                            <s:GridColumn dataField="nombreTienda" headerText="Nombre Tienda" minWidth="100"/>
+                            <s:GridColumn dataField="sku" headerText="Sku" minWidth="60"/>
+                            <s:GridColumn dataField="descripcionSku" headerText="Descripcion" minWidth="100"/>
+                            <s:GridColumn dataField="cantidad" headerText="Piezas" minWidth="60"/>
+                            <s:GridColumn dataField="fechaSolicitud" headerText="Fecha Solicitud" minWidth="120"
+                                          labelFunction="formatFecha"/>
+                            <s:GridColumn dataField="remision" headerText="Remisión" minWidth="80"/>
+                            <s:GridColumn dataField="fechaRemision" headerText="Fecha Remisión" minWidth="120"
+                                          labelFunction="formatFecha"/>
+                            <s:GridColumn dataField="fechaEntrega" headerText="Fecha Entrega" minWidth="100"
+                                          labelFunction="formatFecha"/>
+                        </mx:ArrayCollection>
+                    </s:columns>
+                </s:DataGrid>
+            </s:Group>
+        </s:Scroller>
+    </s:VGroup>
+</s:Application>

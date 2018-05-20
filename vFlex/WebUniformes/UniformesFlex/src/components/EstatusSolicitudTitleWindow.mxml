@@ -1,0 +1,534 @@
+<?xml version="1.0"?>
+<containers:UniformesTitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+                                 xmlns:s="library://ns.adobe.com/flex/spark"
+                                 xmlns:assets="assets.*" xmlns:components="components.*"
+                                 xmlns:mx="library://ns.adobe.com/flex/mx"
+                                 title="Estatus de mi uniforme"
+                                 skinClass="skins.RedTitleWindowSkin"
+                                 xmlns:containers="containers.*">
+    <fx:Declarations>
+        <s:ColorMatrixFilter id="matrixFilter" matrix="{bwMatrix}"/>
+        <mx:RemoteObject id="estatusPedido" destination="estatusPedido" channelSet="{ROUtil.channelSet}"
+                         fault="faultHandler(event)">
+            <mx:method name="consultaEstatus" result="consultaEstatusHandler(event)"/>
+            <mx:method name="consultaFolios" result="consultaFoliosHandler(event)"/>
+        </mx:RemoteObject>
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import mx.controls.ToolTip;
+        import mx.core.IUIComponent;
+        import mx.events.CloseEvent;
+        import mx.managers.ToolTipManager;
+        import mx.rpc.events.FaultEvent;
+        import mx.rpc.events.ResultEvent;
+
+        import spark.components.Alert;
+
+        import utils.MensajeUtil;
+        import utils.ROUtil;
+        import utils.StringUtils;
+
+        [Bindable]
+        private var _idEmpleado:Number;
+
+        [Bindable]
+        private var _nombreEmpleado:String;
+
+        [Bindable]
+        private var folios:ArrayCollection;
+
+        [Bindable]
+        private var resumen:Object;
+
+        [Bindable]
+        private var detalle:ArrayCollection;
+
+        [Bindable]
+        private var solicitadoVisible:Boolean;
+        [Bindable]
+        private var cdVisible:Boolean;
+        [Bindable]
+        private var enCaminoVisible:Boolean;
+        [Bindable]
+        private var enTiendaVisible:Boolean;
+        [Bindable]
+        private var entregadoVisible:Boolean;
+
+        private var rLum:Number = 0.2225;
+        private var gLum:Number = 0.7169;
+        private var bLum:Number = 0.0606;
+
+        [Bindable]
+        private var bwMatrix:Array = [rLum, gLum, bLum, 0, 0,
+            rLum, gLum, bLum, 0, 0,
+            rLum, gLum, bLum, 0, 0,
+            0, 0, 0, 1, 0];
+
+
+        [Bindable]
+        private var _flagManualImagen:Boolean;
+
+        private var tip:ToolTip;
+        private var timer:Timer = new Timer(4000, 1);
+
+        public function get idEmpleado():Number {
+            return _idEmpleado;
+        }
+
+        public function set idEmpleado(value:Number):void {
+            _idEmpleado = value;
+        }
+
+        public function get nombreEmpleado():String {
+            return _nombreEmpleado;
+        }
+
+        public function set nombreEmpleado(value:String):void {
+            _nombreEmpleado = value;
+        }
+
+        public function set flagManualImagen(value:Boolean):void {
+            _flagManualImagen = value;
+        }
+
+        public function consultaHistorialFolios():void {
+            currentState = "BeforeLoadInfo";
+            timer.addEventListener(TimerEvent.TIMER_COMPLETE, ocultarToolTip);
+            estatusPedido.consultaFolios(_idEmpleado);
+
+        }
+
+        private function consultaFoliosHandler(event:ResultEvent):void {
+            if (!MensajeUtil.validaServiceResponse(event, cerrarVentana)) {
+                return;
+            }
+
+            folios = event.result.folios;
+            if (folios == null || folios.length == 0) {
+                MensajeWindow.show(
+                        "Por el momento no tienes solicitudes activas. Favor de realizar tu solicitud.",
+                        "No se encontraron folios.",
+                        MensajeWindow.LEVEL_INFO,
+                        MensajeWindow.OK,
+                        cerrarVentana
+                );
+                return;
+            }
+
+            historiaList.selectedIndex = 0;
+            if (folios.length > 1) {
+                currentState = "FoliosCargados";
+            }
+            consultaEstatusFolio();
+
+
+        }
+
+        private function consultaEstatusHandler(event:ResultEvent):void {
+            if (!MensajeUtil.validaServiceResponse(event, cerrarVentana)) {
+                return;
+            }
+            var estatus:Object = event.result.informacionPedido;
+
+            resumen = [
+                {
+                    folio: estatus.folioPedido,
+                    noTienda: estatus.noTienda,
+                    nombreTienda: estatus.nombreTienda,
+                    fechaSolicitud: estatus.fecha,
+                    estatusGral: estatus.descripcionEstatus
+                }
+            ];
+
+            detalle = estatus.detalle;
+
+            var idEstatus:int = estatus.idEstatus;
+            solicitadoVisible = idEstatus >= 1 && idEstatus <= 9;
+            cdVisible = idEstatus >= 3 && idEstatus <= 9;
+            enCaminoVisible = idEstatus >= 5 && idEstatus <= 9;
+            enTiendaVisible = idEstatus >= 7 && idEstatus <= 9;
+            entregadoVisible = idEstatus == 9;
+
+            currentState = "EstatusCargado";
+        }
+
+        private function faultHandler(event:FaultEvent):void {
+            MensajeUtil.mostrarMensajeFault(event, cerrarVentana);
+        }
+
+        private function cerrarVentana(event:CloseEvent = null):void {
+            this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+        }
+
+        private function consultaEstatusFolio():void {
+            currentState = "CargandoEstatus";
+            var item:Object = folios.getItemAt(historiaList.selectedIndex);
+            estatusPedido.consultaEstatus(item.folio, _idEmpleado);
+        }
+
+        private static function handleImageError(event:IOErrorEvent):void {
+            Alert.show(event.text, "Error al cargar la imagen");
+        }
+
+        private static function fechaLblFunc(data:Object, column:GridColumn):String {
+            var fechaStr:String = data[column.dataField];
+            if (fechaStr != null) {
+                return fechaStr.substr(0, 10);
+            }
+            return "";
+        }
+
+        private function mostrarToolTip(event:MouseEvent, msg:String):void {
+            ocultarToolTip();
+            var maxWidth:Number = ToolTip.maxWidth;
+            ToolTip.maxWidth = 140;
+            var target:Button = Button(event.target);
+            var point:Point = new Point(target.x, target.y);
+            point = target.localToGlobal(point);
+            tip = ToolTipManager.createToolTip(
+                            msg,
+                            point.x,
+                            point.y,
+                            "errorTipAbove",
+                            IUIComponent(event.target)) as ToolTip;
+            tip.y = point.y - tip.height;
+            tip.setStyle("borderColor", 0x6495ed);
+            tip.setStyle("color", 0xffffff);
+            tip.setStyle("fontWeight", "bold");
+            timer.delay = 4000;
+            timer.start();
+            ToolTip.maxWidth = maxWidth;
+        }
+
+        private function ocultarToolTip(event:TimerEvent = null):void {
+            timer.reset();
+            if (tip != null) {
+                ToolTipManager.destroyToolTip(tip);
+                tip = null;
+            }
+        }
+
+        private static function formatFecha(item:Object):String {
+            return StringUtils.df.format(item.fecha);
+        }
+        ]]>
+    </fx:Script>
+
+    <containers:states>
+        <s:State name="BeforeLoadInfo"/>
+        <s:State name="FoliosCargados"/>
+        <s:State name="EstatusCargado"/>
+        <s:State name="CargandoEstatus"/>
+    </containers:states>
+    <containers:transitions>
+        <s:Transition toState="BeforeLoadInfo">
+            <s:Sequence>
+                <s:SetAction property="includeInLayout" value="false" target="{resumenDataGrid}"/>
+                <s:SetAction property="visible" value="false" target="{resumenDataGrid}"/>
+
+                <s:SetAction property="includeInLayout" value="false" target="{detallePanel}"/>
+                <s:SetAction property="visible" value="false" target="{detallePanel}"/>
+
+                <s:SetAction property="includeInLayout" value="false" target="{imageGroup}"/>
+                <s:SetAction property="visible" value="false" target="{imageGroup}"/>
+
+                <s:SetAction property="visible" value="true" target="{spinner}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{spinner}"/>
+            </s:Sequence>
+        </s:Transition>
+        <s:Transition toState="FoliosCargados">
+            <s:Sequence target="{seleccionFolio}">
+                <s:SetAction property="visible" value="true"/>
+                <s:Fade alphaFrom="0" alphaTo="1"/>
+            </s:Sequence>
+        </s:Transition>
+        <s:Transition toState="CargandoEstatus">
+            <s:Sequence>
+                <s:SetAction property="includeInLayout" value="false" target="{resumenDataGrid}"/>
+                <s:SetAction property="visible" value="false" target="{resumenDataGrid}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{detallePanel}"/>
+                <s:SetAction property="visible" value="false" target="{detallePanel}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{imageGroup}"/>
+                <s:SetAction property="visible" value="false" target="{imageGroup}"/>
+                <s:SetAction property="visible" value="true" target="{spinner}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{spinner}"/>
+            </s:Sequence>
+        </s:Transition>
+        <s:Transition toState="EstatusCargado">
+            <s:Sequence>
+                <s:SetAction property="visible" value="false" target="{spinner}"/>
+                <s:SetAction property="includeInLayout" value="false" target="{spinner}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{resumenDataGrid}"/>
+                <s:SetAction property="visible" value="true" target="{resumenDataGrid}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{detallePanel}"/>
+                <s:SetAction property="visible" value="true" target="{detallePanel}"/>
+                <s:SetAction property="includeInLayout" value="true" target="{imageGroup}"/>
+                <s:SetAction property="visible" value="true" target="{imageGroup}"/>
+                <s:Parallel>
+                    <s:Fade alphaFrom="0" alphaTo="1" target="{resumenDataGrid}"/>
+                    <s:Fade alphaFrom="0" alphaTo="1" target="{detallePanel}"/>
+                    <s:Fade alphaFrom="0" alphaTo="1" target="{imageGroup}"/>
+                </s:Parallel>
+            </s:Sequence>
+        </s:Transition>
+
+
+    </containers:transitions>
+    <containers:layout>
+        <s:VerticalLayout gap="10" horizontalAlign="center" paddingTop="10" paddingLeft="5" paddingRight="5"/>
+    </containers:layout>
+
+    <containers:rightControlContent>
+        <components:BotonAyuda numEmpleado="{_idEmpleado}" nombreEmpleado="{_nombreEmpleado}"/>
+    </containers:rightControlContent>
+
+    <containers:leftControlContent>
+        <s:Image xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+                 source="@Embed(source='/assets/book_info.png')" left="5" top="3"
+                 useHandCursor="true"
+                 mouseChildren="false"
+                 buttonMode="true"
+                 click="{this.dispatchEvent(new Event('manualDeImagen'))}"
+                 visible="{_flagManualImagen}"/>
+    </containers:leftControlContent>
+
+    <s:HGroup id="spinner" paddingBottom="10" verticalAlign="middle" horizontalAlign="center"
+              width="100%" height="100%">
+        <assets:Spinner tickColor="#66aaff"/>
+        <s:Label id="spinnerLabel" text="Cargando datos..."/>
+    </s:HGroup>
+    <s:Group width="100%" id="resumenDataGrid"
+             visible="false"
+             includeInLayout="false">
+        <s:Rect top="0" right="0" left="0" bottom="0"
+                topLeftRadiusY="10"
+                topLeftRadiusX="10"
+                topRightRadiusX="10"
+                topRightRadiusY="10">
+            <s:fill>
+                <s:SolidColor color="0xdddddd" alpha="0.7"/>
+            </s:fill>
+        </s:Rect>
+        <s:VGroup top="0" right="0" left="0" bottom="0" paddingTop="10" paddingLeft="5" paddingBottom="5"
+                  paddingRight="5">
+            <s:Label text="Resumen de mi solicitud" fontWeight="bold" paddingLeft="5"/>
+
+            <s:DataGrid requestedRowCount="1" minHeight="0"
+                        textAlign="center" width="100%">
+                <s:dataProvider>
+                    <s:ArrayCollection source="{resumen}"/>
+                </s:dataProvider>
+                <s:columns>
+                    <s:ArrayList>
+                        <s:GridColumn dataField="folio"
+                                      headerText="Folio"
+                                      headerRenderer="skins.CenterHeaderRenderer"/>
+                        <s:GridColumn dataField="noTienda"
+                                      headerText="Tienda receptora"
+                                      headerRenderer="skins.CenterHeaderRenderer"/>
+                        <s:GridColumn dataField="nombreTienda"
+                                      headerText="Nombre de la tienda"
+                                      headerRenderer="skins.CenterHeaderRenderer"/>
+                        <s:GridColumn dataField="fechaSolicitud"
+                                      headerText="Fecha de mi solicitud"
+                                      labelFunction="StringUtils.dateFormatGridColumn"
+                                      headerRenderer="skins.CenterHeaderRenderer"/>
+                        <s:GridColumn dataField="estatusGral"
+                                      headerText="Estatus general"
+                                      headerRenderer="skins.CenterHeaderRenderer"/>
+                    </s:ArrayList>
+
+                </s:columns>
+            </s:DataGrid>
+        </s:VGroup>
+    </s:Group>
+
+    <s:Group width="100%" id="detallePanel"
+             visible="false"
+             includeInLayout="false">
+        <s:Rect top="0" right="0" left="0" bottom="0"
+                topLeftRadiusY="10"
+                topLeftRadiusX="10"
+                topRightRadiusX="10"
+                topRightRadiusY="10">
+            <s:fill>
+                <s:SolidColor color="0xdddddd" alpha="0.7"/>
+            </s:fill>
+        </s:Rect>
+        <s:VGroup top="0" right="0" left="0" bottom="0" paddingTop="10" paddingLeft="5" paddingBottom="5"
+                  paddingRight="5">
+            <s:Label text="Detalle de mi solicitud" fontWeight="bold" paddingLeft="5"/>
+            <s:DataGrid height="100%" width="100%" textAlign="center"
+                        requestedRowCount="{detalle.length}"
+                        dataProvider="{detalle}">
+                <s:columns>
+                    <s:ArrayList>
+                        <s:GridColumn dataField="noPedido"
+                                      headerText="Pedido"
+                                      headerRenderer="skins.CenterHeaderRenderer"/>
+                        <s:GridColumn dataField="sku"
+                                      headerText="SKU"
+                                      headerRenderer="skins.CenterHeaderRenderer"/>
+                        <s:GridColumn dataField="descripcion"
+                                      headerText="Descripción"
+                                      headerRenderer="skins.CenterHeaderRenderer"/>
+                        <s:GridColumn dataField="talla"
+                                      headerText="Talla"
+                                      headerRenderer="skins.CenterHeaderRenderer"/>
+                        <s:GridColumn dataField="totalSku"
+                                      headerText="Total SKU"
+                                      headerRenderer="skins.CenterHeaderRenderer"/>
+                        <s:GridColumn dataField="numRemision"
+                                      headerText="Remisión"
+                                      headerRenderer="skins.CenterHeaderRenderer"/>
+                        <s:GridColumn dataField="estatusDesc"
+                                      headerText="Estatus"
+                                      headerRenderer="skins.CenterHeaderRenderer"/>
+                        <s:GridColumn dataField="fechaEstatus"
+                                      headerText="Fecha"
+                                      headerRenderer="skins.CenterHeaderRenderer"
+                                      labelFunction="StringUtils.dateFormatGridColumn"/>
+                    </s:ArrayList>
+                </s:columns>
+            </s:DataGrid>
+        </s:VGroup>
+    </s:Group>
+    <s:HGroup id="imageGroup"
+              verticalAlign="middle"
+              visible="false"
+              includeInLayout="false"
+              paddingTop="10"
+              gap="3"
+              height="100%">
+        <s:VGroup horizontalAlign="center"
+                  visible="{solicitadoVisible}"
+                  includeInLayout="{solicitadoVisible}">
+            <s:Button icon="img/estatusSolicitud.png"
+                      width="100" height="100"
+                      filters="{cdVisible ? [matrixFilter] : null}"
+                      cornerRadius="10" chromeColor="0xf5f5f5"
+                      click="mostrarToolTip(event, 'Se ha generado un folio de tus pedidos en Sistema de Uniformes')"/>
+            <s:HGroup verticalAlign="middle">
+                <s:Image source="img/paloma.png"
+                         width="30" height="30"
+                         horizontalAlign="center"
+                         smooth="true"
+                         ioError="handleImageError(event)"/>
+                <s:Label text="Solicitado"/>
+            </s:HGroup>
+        </s:VGroup>
+
+        <s:HGroup visible="{cdVisible}"
+                  includeInLayout="{cdVisible}"
+                  gap="3">
+            <s:Image source="img/flechaEstatus.png"
+                     width="54" height="100"
+                     fillMode="clip"
+                     verticalAlign="middle"/>
+            <s:VGroup horizontalAlign="center">
+                <s:Button icon="img/estatusCD.gif"
+                          width="100" height="100"
+                          filters="{enCaminoVisible ? [matrixFilter] : null}"
+                          cornerRadius="10"
+                          chromeColor="0xf5f5f5"
+                          click="mostrarToolTip(event, 'El centro de distribución se encuentra procesando tus pedidos')"/>
+                <s:HGroup verticalAlign="middle">
+                    <s:Image source="img/paloma.png"
+                             width="30" height="30"
+                             horizontalAlign="center"
+                             smooth="true"
+                             ioError="handleImageError(event)"/>
+                    <s:Label text="CD"/>
+                </s:HGroup>
+            </s:VGroup>
+        </s:HGroup>
+
+        <s:HGroup visible="{enCaminoVisible}"
+                  includeInLayout="{enCaminoVisible}"
+                  gap="3">
+            <s:Image source="img/flechaEstatus.png"
+                     width="54" height="100"
+                     fillMode="clip"
+                     verticalAlign="middle"/>
+            <s:VGroup horizontalAlign="center">
+                <s:Button icon="img/estatusEnCamino.gif"
+                          width="100" height="100"
+                          filters="{enTiendaVisible ? [matrixFilter] : null}"
+                          cornerRadius="10"
+                          chromeColor="0xf5f5f5"
+                          click="mostrarToolTip(event, 'Tus pedidos ya están en camino a la sucursal')"/>
+                <s:HGroup verticalAlign="middle">
+                    <s:Image source="img/paloma.png"
+                             width="30" height="30"
+                             horizontalAlign="center"
+                             smooth="true"
+                             ioError="handleImageError(event)"/>
+                    <s:Label text="En Camino"/>
+                </s:HGroup>
+            </s:VGroup>
+        </s:HGroup>
+
+        <s:HGroup visible="{enTiendaVisible}"
+                  includeInLayout="{enTiendaVisible}"
+                  gap="3">
+            <s:Image source="img/flechaEstatus.png"
+                     width="54" height="100"
+                     fillMode="clip"
+                     verticalAlign="middle"/>
+            <s:VGroup horizontalAlign="center">
+                <s:Button icon="img/estatusEnTienda.png"
+                          width="100" height="100"
+                          filters="{entregadoVisible ? [matrixFilter] : null}"
+                          cornerRadius="10"
+                          chromeColor="0xf5f5f5"
+                          click="mostrarToolTip(event, 'La tienda donde solicitaste tu uniforme ya ha recibido el pedido, puedes ir a recogerlo con tu huella')"/>
+                <s:HGroup verticalAlign="middle">
+                    <s:Image source="img/paloma.png"
+                             width="30" height="30"
+                             horizontalAlign="center"
+                             smooth="true"
+                             ioError="handleImageError(event)"/>
+                    <s:Label text="En Tienda"/>
+                </s:HGroup>
+            </s:VGroup>
+        </s:HGroup>
+
+        <s:HGroup visible="{entregadoVisible}"
+                  includeInLayout="{entregadoVisible}"
+                  gap="3">
+            <s:Image source="img/flechaEstatus.png"
+                     width="54" height="100"
+                     fillMode="clip"
+                     verticalAlign="middle"/>
+            <s:VGroup horizontalAlign="center">
+                <s:Button icon="img/estatusEntregado.png"
+                          width="100" height="100"
+                          cornerRadius="10"
+                          chromeColor="0xf5f5f5"
+                          click="mostrarToolTip(event, 'Ya tienes tu uniforme, Te invitamos a portarlo, es parte de la imagen que mostramos a nuestros clientes')"/>
+                <s:HGroup verticalAlign="middle">
+                    <s:Image source="img/paloma.png"
+                             width="30" height="30"
+                             horizontalAlign="center"
+                             smooth="true"
+                             ioError="handleImageError(event)"/>
+                    <s:Label text="Entregado"/>
+                </s:HGroup>
+            </s:VGroup>
+        </s:HGroup>
+
+    </s:HGroup>
+    <containers:controlBarContent>
+        <s:HGroup id="seleccionFolio" verticalAlign="middle" horizontalAlign="right" visible.BeforeLoadInfo="false">
+            <s:Label text="Consultar pedidos anteriores:"/>
+            <s:DropDownList id="historiaList"
+                            change="consultaEstatusFolio()"
+                            width="140"
+                            labelFunction="formatFecha"
+                            dataProvider="{folios}">
+            </s:DropDownList>
+        </s:HGroup>
+    </containers:controlBarContent>
+
+</containers:UniformesTitleWindow>

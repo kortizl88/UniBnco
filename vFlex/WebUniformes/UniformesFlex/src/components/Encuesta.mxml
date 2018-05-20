@@ -1,0 +1,163 @@
+<?xml version="1.0"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+               xmlns:s="library://ns.adobe.com/flex/spark"
+               xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:assets="assets.*">
+    <fx:Declarations>
+        <mx:RemoteObject id="encuestaService"
+                         destination="encuestaService"
+                         channelSet="{ROUtil.channelSet}"
+                         result="encuestaServiceResultHandler(event)"
+                         fault="encuestaServiceFaultHandler(event)"/>
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import model.EncuestaDto;
+        import model.PreguntaDto;
+
+        import mx.events.CloseEvent;
+        import mx.rpc.events.FaultEvent;
+        import mx.rpc.events.ResultEvent;
+
+        import utils.MensajeUtil;
+        import utils.ROUtil;
+
+        private var _encuesta:EncuestaDto;
+
+        [Bindable]
+        private var _nombre:String;
+        [Bindable]
+        private var _puesto:String;
+
+        public function set nombre(value:String):void {
+            _nombre = value;
+        }
+
+        public function set puesto(value:String):void {
+            _puesto = value;
+        }
+
+        public function set encuesta(value:EncuestaDto):void {
+            _encuesta = value;
+            tiendaLbl.text = _encuesta.idSucursal + " - " + _encuesta.sucursal;
+            regionLbl.text = _encuesta.region;
+            preguntasList.dataProvider = _encuesta.preguntas;
+        }
+
+        private function enviarRespuestas():void {
+            if (validaRespuestas()) {
+                _encuesta.comentarios = comentariosTxt.text;
+                encuestaService.guardarEncuesta(_encuesta);
+                enviarBtn.enabled = false;
+                spinnerGroup.visible = true;
+                spinner.play();
+            }
+
+        }
+
+        private function validaRespuestas():Boolean {
+            for each(var preg:PreguntaDto in _encuesta.preguntas) {
+                if (isNaN(preg.idRespuestaSeleccionada) || preg.idRespuestaSeleccionada == 0) {
+                    MensajeWindow.show("Favor de contestar todas las preguntas. Gracias.", "Datos incompletos.");
+                    return false;
+                }
+
+            }
+            return true;
+        }
+
+        private function encuestaServiceFaultHandler(event:FaultEvent):void {
+            MensajeUtil.mostrarMensajeFault(event);
+            spinnerGroup.visible = false;
+            spinner.stop();
+            enviarBtn.enabled = true;
+        }
+
+        private function encuestaServiceResultHandler(event:ResultEvent):void {
+            if (MensajeUtil.validaServiceResponse(event)) {
+                MensajeWindow.show("Se han enviado las respuestas al sistema, gracias por tu colaboración.", "Datos guardados", MensajeWindow.LEVEL_INFO, MensajeWindow.OK)
+            }
+            dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+        }
+        ]]>
+    </fx:Script>
+    <s:VGroup padding="5" top="0" bottom="0" left="0" right="0">
+        <s:HGroup>
+            <s:Label text="Nombre:" fontWeight="bold"/>
+            <s:Label text="{_nombre}"/>
+            <s:Label text="Puesto:" fontWeight="bold"/>
+            <s:Label text="{_puesto}"/>
+        </s:HGroup>
+        <s:HGroup>
+            <s:Label text="Tienda:" fontWeight="bold"/>
+            <s:Label id="tiendaLbl"/>
+            <s:Label text="Region:" fontWeight="bold"/>
+            <s:Label id="regionLbl"/>
+        </s:HGroup>
+        <s:List id="preguntasList" preventSelection="true" borderVisible="false">
+            <s:layout>
+                <s:VerticalLayout/>
+            </s:layout>
+            <s:itemRenderer>
+                <fx:Component>
+                    <s:ItemRenderer autoDrawBackground="false">
+                        <fx:Declarations>
+                            <s:RadioButtonGroup id="radioButtonGroup" change="seleccionaRespuesta(event)"/>
+                        </fx:Declarations>
+                        <fx:Script>
+                            <![CDATA[
+                            import model.RespuestaDto;
+
+                            import spark.components.RadioButton;
+
+                            override public function set data(value:Object):void {
+                                super.data = value;
+                                if (value == null)
+                                    return;
+                                respGroup.removeAllElements();
+                                for each(var resp:RespuestaDto in data.respuestas) {
+                                    var rButton:RadioButton = new RadioButton();
+                                    rButton.group = radioButtonGroup;
+                                    rButton.label = resp.texto;
+                                    rButton.value = resp.idRespuesta;
+                                    respGroup.addElement(rButton);
+                                }
+                            }
+
+                            private function seleccionaRespuesta(event:Event):void {
+                                data.idRespuestaSeleccionada = radioButtonGroup.selectedValue;
+                            }
+                            ]]></fx:Script>
+                        <s:layout>
+                            <s:VerticalLayout gap="1"/>
+                        </s:layout>
+                        <s:Label text="{data.orden}.- {data.texto}" fontWeight="bold"/>
+                        <s:VGroup id="respGroup" gap="1">
+                        </s:VGroup>
+                    </s:ItemRenderer>
+                </fx:Component>
+            </s:itemRenderer>
+        </s:List>
+        <s:Label text="Comentarios adicionales:" fontWeight="bold"/>
+        <s:TextArea id="comentariosTxt" heightInLines="3" width="100%" prompt="Ingresar comentarios..."/>
+    </s:VGroup>
+    <s:Group id="spinnerGroup" visible="false"
+             top="0" bottom="0" left="0" right="0">
+        <s:Rect top="0" bottom="0" left="0" right="0">
+            <s:fill>
+                <s:SolidColor color="#FFFFFF" alpha="0.5"/>
+            </s:fill>
+        </s:Rect>
+        <s:HGroup paddingBottom="10" verticalAlign="middle" horizontalAlign="center" top="0" bottom="0" left="0"
+                  right="0">
+            <assets:Spinner id="spinner" tickColor="#66aaff" autoPlay="false"/>
+        </s:HGroup>
+    </s:Group>
+    <s:controlBarLayout>
+        <s:HorizontalLayout horizontalAlign="right" padding="6"/>
+    </s:controlBarLayout>
+    <s:controlBarContent>
+        <s:Button id="enviarBtn" label="Enviar" click="enviarRespuestas()"
+                  chromeColor="0x0000FF"
+                  color="0xFFFFFF"/>
+    </s:controlBarContent>
+</s:TitleWindow>

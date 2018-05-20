@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="jquery-mobile/jquery.mobile.icons-1.4.5.css">
+    <link rel="stylesheet" href="jquery-mobile/theme-classic.css">
+    <link rel="stylesheet" href="jquery-mobile/jquery.mobile.structure-1.4.5.css">
+    <link rel="stylesheet" href="css/solicitud.css">
+
+    <script src="jquery/jquery-2.1.4.min.js"></script>
+    <script src="jquery-mobile/jquery.mobile-1.4.5.js"></script>
+    <script src="js/mustache.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/solicitud.js"></script>
+    <title>Solicitud de Uniformes</title>
+</head>
+<body>
+<script id="itemSeleccionadoTemplate" type="x-template">
+    <div class="itemSeleccionado">
+        <div class="itemSeleccionadoImg">
+            {{#item.imagenes}}
+            <img src="img/carrusel/{{.}}">
+            {{/item.imagenes}}
+        </div>
+        <div class="itemSeleccionadoDatos">
+            <table>
+                <tr>
+                    <td class="datosLbl">Descripción:</td>
+                    <td>{{item.descripcion}}</td>
+                </tr>
+                <tr>
+                    <td class="datosLbl">Cantidad:</td>
+                    <td>{{item.cantidad}}</td>
+                </tr>
+                <tr>
+                    <td class="datosLbl">Precio:</td>
+                    <td>${{item.precioSubkit}}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="ui-field-contain seleccionTalla">
+            <label>Talla:</label>
+            <select id="selectTalla-{{index}}" rel="tooltip" title="">
+                <option value="-1">- Selecciona -</option>
+                {{#item.tallas}}
+                <option value="{{indiceTalla}}">{{tallaClave}}</option>
+                {{/item.tallas}}
+            </select>
+        </div>
+        <div class="ui-field-contain eliminarItem">
+            <a href="#"
+               class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-icon-left ui-icon-delete">Eliminar</a>
+        </div>
+    </div>
+</script>
+
+<script id="confirmacionMensajeTemplate" type="x-template">
+    <table id="resumenSolicitud">
+        <tr>
+            <th>Cantidad</th>
+            <th>Descripción</th>
+            <th>Talla</th>
+            <th>Precio</th>
+        </tr>
+        {{#items}}
+        <tr>
+            <td>{{cantidad}}</td>
+            <td>{{descripcion}}</td>
+            <td>{{descrTalla}}</td>
+            <td>${{precioSubkit}}</td>
+        </tr>
+        {{/items}}
+        <tr id="totalRow">
+            <td class="totalLbl" colspan="3">
+                Total:
+            </td>
+            <td>${{total}}</td>
+        </tr>
+        <tr>
+            <td colspan="4">
+                ${{desctoSemanal}} durante {{semanas}} semanas
+            </td>
+        </tr>
+    </table>
+
+</script>
+<div data-role="page" data-theme="c">
+    <div id="divHeader" data-role="header">
+        <div id="divTiendaReceptora">
+            <div id="divTiendaLbl">Tienda receptora:</div>
+            <a href="#" id="selectTiendas"
+               class="ui-btn ui-icon-carat-d ui-corner-all ui-btn-icon-right ui-mini ui-btn-inline">- Selecciona -</a>
+        </div>
+    </div>
+    <div data-role="main">
+        <div id="divSolicitudItems">
+            <div class="cabecero">
+                <div>Selecciona las prendas que vas a solicitar</div>
+            </div>
+            <div id="divCarrusel"></div>
+            <div class="cabecero">
+                <div>Prendas seleccionadas</div>
+            </div>
+            <div id="itemsSeleccionados"></div>
+        </div>
+
+        <div id="popupTiendas" data-role="popup" data-dismissible="false" class="ui-corner-all ui-shadow">
+            <a href="#" id="btnCerrarTiendas" data-rel="back"
+               class="ui-btn ui-corner-all ui-shadow ui-icon-delete ui-btn-icon-notext ui-btn-right">Close</a>
+            <input data-type="search" id="filtroTiendas"
+                   placeholder="Selecciona o captura la tienda EKT o SyR más cercana.">
+            <div class="scroll-wrapper">
+                <table data-role="table" class="ui-body-d ui-shadow table-stripe ui-responsive" data-filter="true"
+                       data-input="#filtroTiendas">
+                    <tbody id="listaTiendas">
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="divFooter" data-role="footer">
+        <div id="divTotal"></div>
+        <button id="enviarButton" class="ui-btn ui-mini ui-corner-all ui-btn-b ui-state-disabled">Enviar</button>
+    </div>
+
+
+    <div id="mensajeWindow" data-role="popup" data-dismissible="false">
+        <div id="dialog_label" data-role="header">
+            Titulo
+        </div>
+        <div role="main" class="ui-content">
+            <div id="mensaje">
+                Mensaje
+            </div>
+        </div>
+        <div id="divFooterMensaje" data-role="footer">
+            <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back" data-transition="flow">Aceptar</a>
+        </div>
+    </div>
+
+    <div id="confirmacionPopup" data-role="popup" data-dismissible="false">
+        <div class="tituloPopup" data-role="header">
+            Confirmar pedido
+        </div>
+        <div id="divConfirmacionMensaje" data-role="main" class="ui-content">
+
+        </div>
+        <div class="popupControlbar" data-role="footer">
+            <a href="#" class="ui-btn ui-corner-all ui-btn-inline" data-rel="back" data-transition="flow">Cancelar</a>
+            <a href="#" id="btnGrabarPedido" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back"
+               data-transition="flow">Aceptar</a>
+        </div>
+    </div>
+
+    <div id="pedidoGrabadoPopup" data-role="popup" data-dismissible="false">
+        <div class="tituloPopup" data-role="header">
+            ¡Felicidades! Ya solicitaste tu uniforme.
+        </div>
+        <div id="divMensajePedidoGrabado" data-role="main" class="ui-content">
+
+        </div>
+        <div data-role="footer" class="popupControlbar">
+            <a href="estatus.html" id="btnAceptarPedidoGrabado" class="ui-btn ui-corner-all ui-shadow ui-btn-inline">Aceptar</a>
+        </div>
+    </div>
+
+    <div data-role="popup" id="popupGuia">
+        <div class="tituloPopup" data-role="header">
+            Gu&iacute;a de medidas
+            <a href="#" data-rel="back"
+               class="ui-btn ui-corner-all ui-shadow ui-btn-a ui-icon-delete ui-btn-icon-notext ui-btn-right"
+               data-transition="flow">Close</a>
+        </div>
+
+        <div id="guiaScroll">
+            <img id="imgGuia" src="" alt="Guía de medidas">
+        </div>
+        <div data-role="footer" class="popupControlbar">
+            <a href="#" data-rel="back" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-transition="flow">Aceptar</a>
+        </div>
+    </div>
+
+    <div data-role="popup" id="popupReposicion" data-dismissible="false">
+        <div class="tituloPopup" data-role="header">
+            Solicitud de reposici&oacute;n de herramienta de trabajo
+        </div>
+        <form id="formReposicion" action="#" method="post">
+            <div class="ui-content" data-role="main">
+
+                <div class="dispInlineLabel">
+                    <label for="inputNombre">Nombre:</label>
+                </div>
+                <div class="dispInline">
+                    <input type="text" name="inputNombre" id="inputNombre" placeholder="Nombre" value="" readonly>
+                </div>
+                <div class="clearFloats"></div>
+                <div class="dispInlineLabel">
+                    <label for="inputMotivo">Motivo:</label>
+                </div>
+                <div class="dispInline">
+                    <select id="inputMotivo" name="inputMotivo" required rel="tooltip"
+                            title="Favor de seleccionar el motivo.">
+                        <option value="">- Selecciona -</option>
+                        <option value="Robo">Robo</option>
+                        <option value="Accidente">Accidente</option>
+                        <option value="Extrav&iacute;o">Extrav&iacute;o</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                <div class="clearFloats"></div>
+                <div class="dispInlineLabel">
+                    <label for="inputCorreo">Correo:</label>
+                </div>
+                <div class="dispInline">
+                    <input type="email" name="inputCorreo" id="inputCorreo" placeholder="Correo" required rel="tooltip"
+                           title="Favor de introducir un correo válido.">
+                </div>
+                <div class="clearFloats"></div>
+                <div class="dispInlineLabel">
+                    <label for="inputTelefono">Tel&eacute;fono:</label>
+                </div>
+                <div class="dispInline">
+                    <input type="tel" name="inputTelefono" id="inputTelefono" placeholder="Tel&eacute;fono" required
+                           rel="tooltip" title="Favor de un número de teléfono válido">
+                </div>
+                <div class="clearFloats"></div>
+                <div class="dispInlineLabel">
+                    <label for="inputMensaje">Mensaje:</label>
+                </div>
+                <div class="dispInline">
+                    <textarea rows="5" name="inputMensaje" id="inputMensaje" required rel="tooltip"
+                              title="Favor de introducir un mensaje."></textarea>
+                </div>
+                <div class="clearFloats"></div>
+                <div class="dispInlineLabel">
+                    <label for="inputArchivo">Adjuntar archivo:</label>
+                </div>
+                <div class="dispInline">
+                    <input type="file" id="inputArchivo" name="inputArchivo" accept="image/*">
+                </div>
+            </div>
+            <div id="divReposicionControlBar" data-role="footer" class="popupControlbar">
+                <a href="#" class="ui-btn ui-corner-all ui-btn-inline" data-rel="back"
+                   data-transition="flow">Cancelar</a>
+                <input type="submit" id="btnEnviarReposicion" value="Enviar solicitud">
+            </div>
+
+        </form>
+    </div>
+
+    <div id="msgReposicionPopup" data-role="popup" data-dismissible="false">
+        <div class="tituloPopup" data-role="header">
+            Solicitud de reposición generada.
+        </div>
+        <div id="divMsgReposicion" data-role="main" class="ui-content">
+
+        </div>
+        <div data-role="footer" class="popupControlbar">
+            <a href="#" data-rel="back" id="btnAceptarMsgRep" class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+               data-transition="flow">Aceptar</a>
+        </div>
+    </div>
+
+    <div id="msgCategoriaPopup" data-role="popup" data-dismissible="false">
+        <div class="tituloPopup" data-role="header">
+            Validar solicitud.
+        </div>
+        <div id="divMsgCategoria" data-role="main" class="ui-content">
+
+        </div>
+        <div data-role="footer" class="popupControlbar">
+            <a href="#" data-rel="back" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-transition="flow">Aceptar</a>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

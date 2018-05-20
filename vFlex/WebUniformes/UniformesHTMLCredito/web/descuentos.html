@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="jquery-mobile/jquery.mobile.icons-1.4.5.css">
+    <link rel="stylesheet" href="jquery-mobile/theme-classic.css">
+    <link rel="stylesheet" href="jquery-mobile/jquery.mobile.structure-1.4.5.css">
+    <link rel="stylesheet" href="css/comun.css">
+    <link rel="stylesheet" href="css/descuentos.css">
+
+    <script src="jquery/jquery-2.1.4.min.js"></script>
+    <script src="jquery/jquery-dateFormat.js"></script>
+    <script src="jquery-mobile/jquery.mobile-1.4.5.js"></script>
+    <script src="js/mustache.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/descuentos.js"></script>
+    <title>Descuentos</title>
+</head>
+<body>
+<script id="selectFoliosTemplate" type="x-template">
+    {{#folios}}
+    <option value="{{folio}}">{{fecha}}</option>
+    {{/folios}}
+</script>
+<script id="descuentosTemplate" type="x-template">
+    <table id="tablaDescuentos">
+        <thead class="desctosHead">
+        <tr>
+            <td></td>
+            <td>Pedido</td>
+            <td>Descripci&oacute;n</td>
+            <td>Pagado</td>
+            <td>Por pagar</td>
+            <td>Total</td>
+        </tr>
+        </thead>
+        <tbody>
+        {{#empleadoDesctos}}
+        <tr>
+            <td class="desctosBody">
+                <button id="btnVerDetalle{{refPedido}}">+</button>
+            </td>
+            <td class="desctosBody">{{refPedido}}</td>
+            <td class="desctosBody">{{descGral}}</td>
+            <td class="desctosBody">${{pagado}}</td>
+            <td class="desctosBody">${{porPagar}}</td>
+            <td class="desctosBody">${{total}}</td>
+        </tr>
+        <tr id="detalle{{refPedido}}">
+            <td colspan="6">
+                <div class="divDetalle">
+                    <table>
+                        <thead>
+                        <tr>
+                            <td>A&ntilde;o</td>
+                            <td>Periodo</td>
+                            <td>Pago</td>
+                            <td></td>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {{#detalle}}
+                        <tr>
+                            <td>{{anio}}</td>
+                            <td>{{semana}}</td>
+                            <td>${{descuento}}</td>
+                            <td>Pago {{numPago}} de {{periodos}}</td>
+                        </tr>
+                        {{/detalle}}
+                        </tbody>
+                    </table>
+                </div>
+            </td>
+        </tr>
+        {{/empleadoDesctos}}
+        <tr>
+            <td class="desctosSuma" colspan="3"></td>
+            <td class="desctosSuma">${{sumaPagado}}</td>
+            <td class="desctosSuma">${{sumaPorPagar}}</td>
+            <td class="desctosSuma">${{sumaTotal}}</td>
+        </tr>
+        </tbody>
+    </table>
+</script>
+
+
+<div data-role="page" data-theme="c">
+    <div id="divMain" data-role="main">
+
+    </div>
+    <div id="divFooter" data-role="footer" data-position="fixed">
+        Consultar pedidos anteriores:&nbsp;
+        <select id="selectFolio" class="ui-btn-inline">
+        </select>
+    </div>
+    <div id="alertPopup" data-role="popup" data-dismissible="false">
+        <div id="ditTituloAlert" data-role="header">
+            Titulo
+        </div>
+        <div role="main" class="ui-content" id="divMensajeAlert">
+            Mensaje
+        </div>
+        <div id="divFooterPopup" data-role="footer">
+            <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back" data-transition="flow">Aceptar</a>
+        </div>
+    </div>
+    <div id="mensajeWindow" data-role="popup" data-dismissible="false">
+        <div id="dialog_label" data-role="header">
+            Titulo
+        </div>
+        <div role="main" class="ui-content">
+            <div id="mensaje">
+                Mensaje
+            </div>
+        </div>
+        <div id="divFooterMensaje" data-role="footer">
+            <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back" data-transition="flow">Aceptar</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+               xmlns:components="components.*"
+               xmlns:s="library://ns.adobe.com/flex/spark" creationComplete="creationHandler(event)">
+    <fx:Style>
+        @namespace s "library://ns.adobe.com/flex/spark";
+        @namespace ns "http://flex.apache.org/experimental/ns";
+
+        @font-face {
+            src: url("fonts/fa-solid-900.ttf");
+            fontFamily: fa-solid-900;
+            fontStyle: normal;
+            fontWeight: normal;
+            embedAsCFF: true;
+        }
+
+        @font-face {
+            font-family: Verdana;
+            fontStyle: normal;
+            src: url("/fonts/Verdana.ttf");
+            fontWeight: normal;
+            embedAsCFF: true;
+        }
+
+        @font-face {
+            font-family: Verdana;
+            fontStyle: normal;
+            src: url("/fonts/VerdanaBold.ttf");
+            fontWeight: bold;
+            embedAsCFF: true;
+        }
+
+        global {
+            fontSize: 14px;
+        }
+
+        ns|Alert {
+            skinClass: ClassReference("skins.AlertSkin");
+        }
+
+        s|Label {
+            fontFamily: Verdana;
+        }
+
+        s|ToggleButton:disabledAndSelected#solicitudButton,
+        s|ToggleButton:downAndSelected#solicitudButton,
+        s|ToggleButton:overAndSelected#solicitudButton,
+        s|ToggleButton:upAndSelected#solicitudButton {
+            icon: Embed(source="/resources/solicita_aqui_uniforme_select.png");
+        }
+
+        s|ToggleButton:up#solicitudButton,
+        s|ToggleButton:over#solicitudButton,
+        s|ToggleButton:down#solicitudButton,
+        s|ToggleButton:disabled#solicitudButton {
+            icon: Embed(source="/resources/solicita_aqui_uniforme.png");
+        }
+
+        s|ToggleButton:disabledAndSelected#estatusButton,
+        s|ToggleButton:downAndSelected#estatusButton,
+        s|ToggleButton:overAndSelected#estatusButton,
+        s|ToggleButton:upAndSelected#estatusButton {
+            icon: Embed(source="/resources/estatus_uniforme_select.png");
+        }
+
+        s|ToggleButton:up#estatusButton,
+        s|ToggleButton:over#estatusButton,
+        s|ToggleButton:down#estatusButton,
+        s|ToggleButton:disabled#estatusButton {
+            icon: Embed(source="/resources/estatus_uniforme.png");
+        }
+
+        s|ToggleButton:disabledAndSelected#descuentosButton,
+        s|ToggleButton:downAndSelected#descuentosButton,
+        s|ToggleButton:overAndSelected#descuentosButton,
+        s|ToggleButton:upAndSelected#descuentosButton {
+            icon: Embed(source="/resources/uniforme_descuento_select.png");
+        }
+
+        s|ToggleButton:up#descuentosButton,
+        s|ToggleButton:over#descuentosButton,
+        s|ToggleButton:down#descuentosButton,
+        s|ToggleButton:disabled#descuentosButton {
+            icon: Embed(source="/resources/uniforme_descuento.png");
+        }
+
+        s|ToggleButton:disabledAndSelected#entregaButton,
+        s|ToggleButton:downAndSelected#entregaButton,
+        s|ToggleButton:overAndSelected#entregaButton,
+        s|ToggleButton:upAndSelected#entregaButton {
+            icon: Embed(source="/resources/entrega_uniformes_select.png");
+        }
+
+        s|ToggleButton:up#entregaButton,
+        s|ToggleButton:over#entregaButton,
+        s|ToggleButton:down#entregaButton,
+        s|ToggleButton:disabled#entregaButton {
+            icon: Embed(source="/resources/entrega_uniformes.png");
+        }
+    </fx:Style>
+    <fx:Script><![CDATA[
+        import mx.events.FlexEvent;
+
+        import spark.components.Alert;
+
+        private static function creationHandler(event:FlexEvent):void {
+            Alert.CANCEL_LABEL = "Cancelar";
+            Alert.OK_LABEL = "Aceptar";
+            Alert.buttonWidth = 82;
+        }
+        ]]></fx:Script>
+    <components:EmpleadoPanel width="100%" height="100%"/>
+
+</s:Application>
+
+

@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+               xmlns:s="library://ns.adobe.com/flex/spark"
+               addedEffect="{fadeIn}">
+    <fx:Declarations>
+        <s:Fade id="fadeIn" alphaFrom="0" alphaTo="1"/>
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import mx.events.CloseEvent;
+
+        private function cerrarVentana():void {
+            this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+        }
+        ]]>
+    </fx:Script>
+
+    <s:Scroller top="0" bottom="0" left="0" right="0">
+        <s:Group>
+            <s:Image id="image" scaleMode="letterbox" width="100%" top="0" verticalAlign="top"/>
+        </s:Group>
+    </s:Scroller>
+
+    <s:controlBarContent>
+        <s:Spacer width="100%"/>
+        <s:Button chromeColor="0x0000FF"
+                  color="0xFFFFFF"
+                  label="Aceptar"
+                  click="cerrarVentana()"/>
+    </s:controlBarContent>
+</s:TitleWindow>

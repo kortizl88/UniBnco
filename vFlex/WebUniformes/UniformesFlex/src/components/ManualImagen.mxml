@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+               xmlns:s="library://ns.adobe.com/flex/spark"
+               title="Manual de Imagen Personal"
+               showEffect="{effectIn}">
+    <s:layout>
+        <s:VerticalLayout horizontalAlign="center"
+                          paddingBottom="0"
+                          paddingLeft="0"
+                          paddingRight="0"
+                          paddingTop="0"/>
+    </s:layout>
+    <fx:Declarations>
+        <s:Fade alphaFrom="0" alphaTo="1" id="effectIn"/>
+    </fx:Declarations>
+    <fx:Script><![CDATA[
+        import mx.collections.ArrayCollection;
+        import mx.events.CloseEvent;
+
+        [Bindable]
+        private var _imagenes:ArrayCollection;
+
+
+        public function set imagenes(value:ArrayCollection):void {
+            _imagenes = value;
+        }
+        ]]></fx:Script>
+    <s:List height="100%" width="100%"
+            verticalScrollPolicy="on"
+            preventSelection="true"
+            contentBackgroundColor="0xd3d3d3"
+            horizontalCenter="0" verticalCenter="0" dataProvider="{_imagenes}" useVirtualLayout="false">
+        <s:layout>
+            <s:VerticalLayout horizontalAlign="center" variableRowHeight="true" requestedRowCount="{_imagenes.length}"/>
+        </s:layout>
+        <s:itemRenderer>
+            <fx:Component>
+                <s:ItemRenderer width="100%" height="{1125 * (this.width/1500)}"
+                                autoDrawBackground="false">
+                <s:Image id="imagen" source="img/{data}"
+                             scaleMode="letterbox" fillMode="scale"
+                             smooth="true" width="100%"
+                             height="{1125 * (this.width/1500)}" verticalAlign="top"/>
+                </s:ItemRenderer>
+            </fx:Component>
+        </s:itemRenderer>
+
+    </s:List>
+    <s:controlBarContent>
+        <s:Spacer width="100%"/>
+        <s:Button label="Aceptar"
+                  click="{dispatchEvent(new CloseEvent(CloseEvent.CLOSE))}"
+                  chromeColor="0x0000FF"
+                  color="0xFFFFFF"/>
+    </s:controlBarContent>
+</s:TitleWindow>

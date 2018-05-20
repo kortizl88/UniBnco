@@ -1,0 +1,319 @@
+<?xml version="1.0"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+               xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+               title="Captura tus medidas" minWidth="200" minHeight="150" maxWidth="500" backgroundColor="0xe6e6e6">
+    <fx:Style>
+        .formItemStyle#labelDisplay {
+            textAlign: right;
+        }
+    </fx:Style>
+    <fx:Declarations>
+        <mx:RemoteObject id="solicitudService"
+                         destination="solicitudUniforme"
+                         channelSet="{ROUtil.channelSet}">
+            <mx:method name="consultaMedidasPorCarga"
+                       result="consultaMedidasPorCargaHandler(event)"
+                       fault="faultHandler(event)"/>
+            <mx:method name="guardaMedidasCapturadas"
+                       result="guardaMedidasCapturadasHandler(event)"
+                       fault="faultHandler(event)"/>
+        </mx:RemoteObject>
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import events.CambioMedidaEvent;
+
+        import model.CapturaDetalleDto;
+        import model.GuardaCapturaMedidaDto;
+
+        import mx.collections.ArrayCollection;
+        import mx.containers.Form;
+        import mx.containers.FormHeading;
+        import mx.containers.FormItem;
+        import mx.events.CloseEvent;
+        import mx.events.ValidationResultEvent;
+        import mx.managers.PopUpManager;
+        import mx.rpc.events.FaultEvent;
+        import mx.rpc.events.ResultEvent;
+        import mx.validators.Validator;
+
+        import spark.components.HGroup;
+        import spark.components.Label;
+        import spark.components.TextInput;
+        import spark.events.TextOperationEvent;
+        import spark.validators.NumberValidator;
+
+        import utils.MensajeUtil;
+        import utils.ROUtil;
+        import utils.StringUtils;
+
+        private var _idEmpleado:Number;
+        private var _idCanal:Number;
+        private var _idFuncion:Number;
+        private var _idGenero:Number;
+
+        private var _carga:Object;
+
+        private var validadores:Array = [];
+
+        private var inputsPorMedida:Object = {};
+
+        [Bindable]
+        private var medidas:ArrayCollection;
+
+
+        public function set idEmpleado(value:Number):void {
+            _idEmpleado = value;
+        }
+
+        public function set idCanal(value:Number):void {
+            _idCanal = value;
+        }
+
+        public function set idFuncion(value:Number):void {
+            _idFuncion = value;
+        }
+
+        public function set idGenero(value:Number):void {
+            _idGenero = value;
+        }
+
+
+        public function get carga():Object {
+            return _carga;
+        }
+
+        public function set carga(value:Object):void {
+            _carga = value;
+        }
+
+        private function desactivar():void {
+            spinnerGroup.visible = true;
+            guardarBtn.enabled = false;
+            chkBox.enabled = false;
+        }
+
+        private function reactivar():void {
+            spinnerGroup.visible = false;
+            chkBox.enabled = true;
+            guardarBtn.enabled = chkBox.selected;
+            PopUpManager.centerPopUp(this);
+        }
+
+        public function consultaTallasParaCapturar():void {
+            desactivar();
+            solicitudService.consultaMedidasPorCarga(_idEmpleado, this.carga.idCarga);
+        }
+
+        private function consultaMedidasPorCargaHandler(event:ResultEvent):void {
+            if (!MensajeUtil.validaServiceResponse(event)) {
+                this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+                return;
+            }
+            if (carga.bandMedidasCapturadas) {
+                var msgModif:String;
+                switch (carga.modificaciones) {
+                    case 0:
+                        msgModif = "No es posible realizar cambios, haz alcanzado el máximo de modificaciones.";
+                        break;
+                    case 1:
+                        msgModif = "Advertencia: Sólo podrás realizar una modificación más a tus capturas de medidas";
+                        break;
+                    default:
+                        msgModif = "Advertencia: Modificaciones disponibles: " + carga.modificaciones;
+                }
+                infoModificaciones.text = msgModif;
+                infoModificacionesGroup.visible = true;
+                infoModificacionesGroup.includeInLayout = true;
+            }
+
+            if (carga.bandMedidasCapturadas && carga.modificaciones == 0) {
+                chkBoxGroup.visible = false;
+                chkBoxGroup.includeInLayout = false;
+            }
+            medidas = event.result.value;
+            var formulario:Form = new Form();
+            var focus:Boolean = true;
+            formGroup.addElement(formulario);
+
+            for each(var prenda:Object in medidas) {
+                var heading:FormHeading = new FormHeading();
+                formulario.addElement(heading);
+                heading.label = StringUtils.capitalize(prenda.descripcion);
+                heading.setStyle("fontSize", 14);
+                for each (var med:Object in prenda.medidas) {
+                    var item:FormItem = new FormItem();
+                    var txtInp:TextInput = new TextInput();
+                    var lblMedida:Label = new Label();
+                    var hGroup:HGroup = new HGroup();
+                    var valid:NumberValidator = new NumberValidator();
+
+                    if (carga.bandMedidasCapturadas && carga.modificaciones == 0) {
+                        txtInp.editable = false;
+                    }
+
+                    if (!inputsPorMedida.hasOwnProperty(String(med.idMedida))) {
+                        inputsPorMedida[String(med.idMedida)] = {
+                            inputs: new ArrayCollection(),
+                            objs: new ArrayCollection()
+                        };
+                    }
+                    inputsPorMedida[String(med.idMedida)].inputs.addItem(txtInp);
+                    inputsPorMedida[String(med.idMedida)].objs.addItem(med);
+                    formulario.addElement(item);
+                    hGroup.verticalAlign = "middle";
+                    lblMedida.text = med.unidadesMedida;
+
+                    hGroup.addElement(txtInp);
+                    hGroup.addElement(lblMedida);
+                    item.addElement(hGroup);
+                    item.label = StringUtils.capitalize(med.descripcion) + ":";
+                    item.styleName = "formItemStyle";
+
+                    valid.fractionalDigits = 2;
+                    valid.allowNegative = false;
+                    valid.source = txtInp;
+                    valid.property = "text";
+                    valid.groupingSeparator = "";
+
+                    validadores.push(valid);
+
+                    txtInp.width = 45;
+                    txtInp.text = med.valor;
+                    (function (textInput:TextInput, validador:NumberValidator, obj:Object):void {
+                        textInput.addEventListener(TextOperationEvent.CHANGE, function (event:TextOperationEvent):void {
+                            var vr:ValidationResultEvent = validador.validate();
+                            if (vr.type == ValidationResultEvent.VALID) {
+                                obj.valor = Number(textInput.text);
+                                textInput.dispatchEvent(new CambioMedidaEvent(CambioMedidaEvent.CAMBIO_MEDIDA_EVENT, obj.idMedida, obj.valor));
+                            }
+                        });
+                    })(txtInp, valid, med);
+                    txtInp.addEventListener(CambioMedidaEvent.CAMBIO_MEDIDA_EVENT, actualizaMedidas);
+                    if (focus) {
+                        txtInp.setFocus();
+                        focus = false;
+                    }
+                }
+            }
+            reactivar();
+        }
+
+        private function actualizaMedidas(event:CambioMedidaEvent):void {
+            for each (var input:TextInput in inputsPorMedida[String(event.idMedida)].inputs) {
+                input.text = event.valor.toString();
+            }
+            for each (var obj:Object in inputsPorMedida[String(event.idMedida)].objs) {
+                obj.valor = event.valor;
+            }
+        }
+
+        private function faultHandler(event:FaultEvent):void {
+            MensajeUtil.mostrarMensajeFault(event);
+            this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+        }
+
+        private function guardarCapturas():void {
+            if (Validator.validateAll(validadores).length > 0) {
+                MensajeWindow.show("Favor de verificar los valores ingresados.", "Valores invalidos", MensajeWindow.LEVEL_WARN);
+                return;
+            }
+            MensajeWindow.show(
+                    "¿Confirmas que las medidas capturadas son correctas?",
+                    "Confirmación",
+                    MensajeWindow.LEVEL_QUESTION,
+                    MensajeWindow.YES | MensajeWindow.NO,
+                    confirmacionHandler);
+        }
+
+        private function confirmacionHandler(e:CloseEvent):void {
+            if (e.detail == MensajeWindow.YES) {
+                var captura:GuardaCapturaMedidaDto = new GuardaCapturaMedidaDto();
+                captura.idCarga = this.carga.idCarga;
+                captura.idGenero = this._idGenero;
+                captura.idEmpleado = this._idEmpleado;
+                captura.funcionSap = this._idFuncion;
+                captura.idNegocio = this._idCanal;
+                captura.detalle = new ArrayCollection();
+                for each(var prenda:Object in medidas) {
+                    for each (var med:Object in prenda.medidas) {
+                        if (med.valor == null) {
+                            MensajeWindow.show("Favor de capturar todas las tallas.", "Peticion incompleta", MensajeWindow.LEVEL_WARN);
+                            return;
+                        }
+                        var det:CapturaDetalleDto = new CapturaDetalleDto();
+                        det.idMedida = med.idMedida;
+                        det.valor = med.valor;
+                        captura.detalle.addItem(det);
+                    }
+                }
+                desactivar();
+                solicitudService.guardaMedidasCapturadas(captura);
+            }
+        }
+
+        private function guardaMedidasCapturadasHandler(event:ResultEvent):void {
+            if (MensajeUtil.validaServiceResponse(event)) {
+                MensajeWindow.show("Se han guardado exitosamente los datos. ¡Gracias!", "Datos guardados", MensajeWindow.LEVEL_INFO);
+            }
+            this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+        }
+        ]]>
+    </fx:Script>
+    <s:Group top="0" bottom="0" left="0" right="0">
+        <s:VGroup top="0" bottom="0" left="0" right="0" horizontalAlign="center" padding="5">
+            <s:VGroup horizontalAlign="center" id="formGroup">
+                <s:Group width="99%" id="infoModificacionesGroup" visible="false" includeInLayout="false">
+                    <s:Rect top="0" bottom="0" left="0" right="0">
+                        <s:stroke>
+                            <s:SolidColorStroke color="#FFF5A5" alpha="0.5"/>
+                        </s:stroke>
+                        <s:fill>
+                            <s:SolidColor color="#FFF5A5"/>
+                        </s:fill>
+                        <s:filters>
+                            <s:DropShadowFilter distance="1" angle="45"/>
+                        </s:filters>
+                    </s:Rect>
+                    <s:Label top="5" bottom="5" left="10" verticalAlign="middle" text="\uF071"
+                             fontFamily="fa-solid-900"/>
+                    <s:Label id="infoModificaciones" top="5" left="35" right="5" bottom="5" fontSize="12"/>
+                </s:Group>
+            </s:VGroup>
+            <s:VGroup width="100%" padding="0" gap="0">
+                <s:Line width="100%">
+                    <s:stroke>
+                        <s:SolidColorStroke color="0xa9a9a9"/>
+                    </s:stroke>
+                </s:Line>
+                <s:Line width="100%">
+                    <s:stroke>
+                        <s:SolidColorStroke color="0xf5f5f5"/>
+                    </s:stroke>
+                </s:Line>
+            </s:VGroup>
+            <s:HGroup width="100%" verticalAlign="top" padding="3" id="chkBoxGroup">
+                <s:CheckBox id="chkBox"/>
+                <s:Label text="Acepto la completa responsabilidad de la información que proporciono en este formulario."
+                         width="100%" fontSize="12"/>
+            </s:HGroup>
+        </s:VGroup>
+        <s:Group id="spinnerGroup" top="0" bottom="0" left="0" right="0">
+            <s:Rect top="0" bottom="0" left="0" right="0">
+                <s:fill>
+                    <s:SolidColor color="#ffffff" alpha="0.3"/>
+                </s:fill>
+            </s:Rect>
+            <s:VGroup horizontalAlign="center" verticalAlign="middle" top="0" bottom="0" left="0" right="0">
+                <s:BusyIndicator/>
+            </s:VGroup>
+        </s:Group>
+    </s:Group>
+    <s:controlBarContent>
+        <s:Button id="guardarBtn" label="Guardar" click="guardarCapturas()" icon="@Embed(source='/assets/guardar.png')"
+                  cornerRadius="5" enabled="{chkBox.selected}"/>
+    </s:controlBarContent>
+    <s:controlBarLayout>
+        <s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" padding="3"/>
+    </s:controlBarLayout>
+</s:TitleWindow>

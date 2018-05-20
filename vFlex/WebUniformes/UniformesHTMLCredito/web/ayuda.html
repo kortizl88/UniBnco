@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="jquery-mobile/jquery.mobile.icons-1.4.5.css">
+    <link rel="stylesheet" href="jquery-mobile/theme-classic.css">
+    <link rel="stylesheet" href="jquery-mobile/jquery.mobile.structure-1.4.5.css">
+    <link rel="stylesheet" href="css/tooltipAzul.css">
+    <link rel="stylesheet" href="css/ayuda.css">
+
+    <script src="jquery/jquery-2.1.4.min.js"></script>
+    <script src="jquery-mobile/jquery.mobile-1.4.5.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/ayuda.js"></script>
+    <title>Preguntas frecuentes</title>
+</head>
+<body>
+
+<div id="divPage" data-role="page" data-theme="c">
+
+    <div id="divInfo" data-role="content">
+        <img src="img/Information.png">
+
+        <div>
+            Para ver la informaci&oacute;n selecciona tu problema de la siguiente lista<br>
+            Si tu problema no aparece o tienes alguna duda, sugerencia o comentario <br>
+            <a id="linkEnviarCorreo" href="#">Envianos un correo aqui</a>
+        </div>
+    </div>
+    <div id="divFaq">
+        <div id="divLeft">
+            <div class="head">
+                Problema
+            </div>
+            <div id="divContenidoProblemas">
+                <ul id="listaProblemas">
+                    <li>
+                        <a href="#problem01"><p>&#8226; Me aparecen tallas de mujer y soy hombre o viceversa.</p></a>
+                    </li>
+                    <li>
+                        <a href="#problem02"><p>&#8226; Al querer elegir la tienda receptora, me aparecen tiendas que no
+                            son de mi
+                            región.</p></a>
+                    </li>
+                    <li>
+                        <a href="#problem03"><p>&#8226; Me aparece una tienda receptora que no me corresponde y no puedo
+                            cambiarla.</p></a>
+                    </li>
+                    <li>
+                        <a href="#problem04"><p>&#8226; No puedo pedir uniformes, las prendas a elegir están
+                            bloqueadas.</p></a>
+                    </li>
+                    <li>
+                        <a href="#problem05"><p>&#8226; Me aparece un mensaje de "no tienes un kit asignado".</p></a>
+                    </li>
+                    <li>
+                        <a href="#problem06"><p>&#8226; Únicamente las camisas tienen estatus "Recibido en Tienda" y los
+                            pantalones
+                            no ¿puedo ir a recoger las camisas?</p></a>
+                    </li>
+                    <li>
+                        <a href="#problem07"><p>&#8226; Me están descontando pedidos anteriores.</p></a>
+                    </li>
+                    <li>
+                        <a href="#problem08"><p>&#8226; El gerente me dice que no llegaron mis uniformes, pero en
+                            sistema el
+                            estatus es "Recibido en Tienda".</p></a>
+                    </li>
+                    <li>
+                        <a href="#problem09"><p>&#8226; Los descuentos no se reflejan en la sección "Uniforme en
+                            descuento".</p></a>
+                    </li>
+                    <li>
+                        <a href="#problem10"><p>&#8226; En sistema de uniformes dice que mi último pago era en la semana
+                            5 y me
+                            descontaron en la semana 6.</p></a>
+                    </li>
+                    <li>
+                        <a href="#problem11"><p>&#8226; No entiendo el estatus de mi Uniforme.</p></a>
+                    </li>
+
+                </ul>
+            </div>
+        </div>
+        <div id="divRight">
+            <div id="divCausa">
+                <div class="head">
+                    Causa
+                </div>
+                <div id="divContenidoCausa">
+
+                </div>
+            </div>
+            <div id="divSolucion">
+                <div class="head">
+                    Soluci&oacute;n
+                </div>
+                <div id="divContenidoSolucion">
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="divHtmlCausa">
+        <div prob-ref="problem01">
+            Fuiste dado de alta en RH con género equivocado.
+        </div>
+        <div prob-ref="problem02">
+            Los centros de costos tardan para estar actualizados en línea.
+        </div>
+        <div prob-ref="problem03">
+            El centro de costos con el cual fuiste dado de alta corresponde a esa tienda.
+        </div>
+        <div prob-ref="problem04">
+            Las solicitudes son cada 6 meses y deben estar recibidas con la huella.
+        </div>
+        <div prob-ref="problem05">
+            Seguramente tu puesto es nuevo y no tiene uniforme configurado.
+        </div>
+        <div prob-ref="problem06">
+            Cuando generas solicitud de camisas y pantalones en un pedido, este puede llegar en parcialidades; solo las
+            camisas, por ejemplo. Los pantalones seguramente no se enviaron por falta de inventario.
+        </div>
+        <div prob-ref="problem07">
+            Confirmaste la entrega de los pedidos por sistema.
+        </div>
+        <div prob-ref="problem08">
+            Extravío de uniformes.
+        </div>
+        <div prob-ref="problem09">
+            "Uniforme en descuento" es una sección informativa.
+        </div>
+        <div prob-ref="problem10">
+            La información mostrada corresponde a la semana que se está cobrando, no a la semana en que se aplicó el
+            descuento.
+        </div>
+        <div prob-ref="problem11">
+
+        </div>
+    </div>
+    <div id="divHtmlSolucion">
+        <div prob-ref="problem01">
+            Pide a tu regional que solicite la corrección de género con RH, el cambio se debe hacer desde la plantilla.
+        </div>
+        <div prob-ref="problem02">
+            El sistema te permite elegir o capturar la tienda receptora. Sé muy cuidadoso en capturarla, asegúrate de
+            que sea una tienda cercana.
+        </div>
+        <div prob-ref="problem03">
+            Pide a tu regional que actualice tu centro de costos, este debe coincidir con la tienda donde te encuentras
+            físicamente.
+        </div>
+        <div prob-ref="problem04">
+            Recuerda cuándo fue tu última solicitud y si la recibiste con tu huella. El sistema te permite solicitar
+            cada 6 meses y dicha solicitud debe estar descargada con tu huella. Existen excepciones: robo, desgaste,
+            etc. En estos casos envíanos un correo, nos encuentras en Lotus: Jose Guadalupe Vallejo Reyes o Hugo Daniel
+            García
+            Macías.
+        </div>
+        <div prob-ref="problem05">
+            Repórtalo de inmediato para configurarle uniforme a tu puesto.
+        </div>
+        <div prob-ref="problem06">
+            Acude a la tienda por lo que haya llegado (estatus "Recibido en tienda") y recíbelo con tu huella. El resto
+            del pedido llegará posteriormente y deberás darle seguimiento en "Estatus de mi uniforme".
+        </div>
+        <div prob-ref="problem07">
+            Al momento de recibir tus uniformes, revisa bien lo que te está entregando el gerente tanto físicamente como
+            por sistema, deben coincidir y confirma con tu huella.
+        </div>
+        <div prob-ref="problem08">
+            Cuando el estatus es "Recibido en tienda" quiere decir que el gerente recibió e ingresó una remisión que
+            contiene dichos uniformes. Por esa razón debes acudir de inmediato por tu uniforme y reportar cualquier
+            anomalía. En caso de extravío, envíanos un correo, nos encuentras en Lotus: Jose Guadalupe Vallejo Reyes o
+            Hugo Daniel
+            García Macías.
+        </div>
+        <div prob-ref="problem09">
+            Los descuentos llegan a tardar hasta 4 semanas en verse reflejados en sistema de uniformes, sin embargo sí
+            se están tomando en cuenta. Puedes consultar con Servicios al Personal (extensión 74150) que te envíen una
+            relación de tus pagos de Uniforme. También te recomendamos que guardes tus recibos para cualquier aclaración
+            y envíanos un correo, nos encuentras en Lotus: Jose Guadalupe Vallejo Reyes o Hugo Daniel García Macías.
+        </div>
+        <div prob-ref="problem10">
+            El descuento corresponde a la semana siguiente. Ejemplo: dice que mi último descuento es de la semana 06 -
+            martes 03 de febrero. Este pago será aplicado en la semana 07, correspondiente a la semana 06.
+        </div>
+        <div prob-ref="problem11">
+            <table>
+                <thead>
+                <tr>
+                    <td>Estatus</td>
+                    <td>Descripcion</td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>Solicitado</td>
+                    <td>Enviaste la solicitud de uniforme, generando un folio, mismo que se compone de varios pedidos.
+                    </td>
+                </tr>
+                <tr>
+                    <td>Atendido en CD</td>
+                    <td>Tu folio se encuentra en el Centro de Distribución.</td>
+                </tr>
+                <tr>
+                    <td>Reinyectado</td>
+                    <td>Tu pedido fue devuelto por la tienda porque no llegó correctamente, por lo tanto, se cancela y
+                        se genera automáticamente otro pedido.
+                    </td>
+                </tr>
+                <tr>
+                    <td>Parcialmente enviado a tienda</td>
+                    <td>El Centro de Distribución envía una parte de tu folio.</td>
+                </tr>
+                <tr>
+                    <td>Enviado a tienda</td>
+                    <td>El Centro de Distribución envió a tienda tu folio completo o el complemento del mismo (pedidos
+                        faltantes)
+                    </td>
+                </tr>
+                <tr>
+                    <td>Parcialmente recibido en tienda</td>
+                    <td>La tienda recibió una parte de tu folio y lo ingresó a su inventario.</td>
+                </tr>
+                <tr>
+                    <td>Recibido en tienda</td>
+                    <td>La tienda recibió tu folio completo o el complemento del mismo y lo ingresó a su inventario.
+                    </td>
+                </tr>
+                <tr>
+                    <td>Parcialmente entregado</td>
+                    <td>Liberaste, descargaste con tu huella una parte de tu folio.</td>
+                </tr>
+                <tr>
+                    <td>Entregado</td>
+                    <td>Liberaste, descargaste con tu huella el folio completo o los pedidos restantes para
+                        completarlo.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="divSeleccionaTipo" data-role="popup" data-dismissible="false" data-theme="c">
+        <div class="tituloPopup" data-role="header">
+            Enviar correo electr&oacute;nico
+            <a href="#" data-rel="back"
+               class="ui-btn ui-corner-all ui-shadow ui-icon-delete ui-btn-icon-notext ui-btn-right">Close</a>
+        </div>
+        <div role="main" class="ui-content">
+            <form>
+                <ul id="ulTipoProblema" data-role="listview" data-inset="true">
+                    <li class="ui-field-contain">
+                        <label for="tipoProblema">Por favor elige qu&eacute; tipo de problema tienes:</label>
+                        <select id="tipoProblema">
+                            <option value="">- Selecciona -</option>
+                            <option value="1">G&eacute;nero Equivocado</option>
+                            <option value="2">Tienda receptora</option>
+                            <option value="3">Solicitud de mi uniforme</option>
+                            <option value="4">Kit no asignado</option>
+                            <option value="5">Estatus de mi uniforme</option>
+                            <option value="6">Descuento de mi uniforme</option>
+                            <option value="7">Solicitud de uniforme antes de 6 meses</option>
+                            <option value="8">Extrav&iacute;o de mi uniforme en tienda receptora</option>
+                            <option value="9">Manual de imagen</option>
+                            <option value="10">Otro (Especifica)</option>
+                        </select>
+                    </li>
+                </ul>
+                <ul id="ulDescripcion">
+                    <li id="liDescripcion" class="ui-body ui-body-b">
+                        <input type="text" id="inputDescripcion" rel="tooltip"
+                               title="Por favor especifica o selecciona otro valor de la lista">
+                        <button id="btnOK" class="ui-btn ui-corner-all">OK</button>
+                    </li>
+                </ul>
+            </form>
+        </div>
+    </div>
+
+    <div id="divEnviarCorreoPopup" data-role="popup" data-dismissible="false" data-theme="c">
+        <div class="tituloPopup" data-role="header">
+            Enviar correo electr&oacute;nico
+            <a href="#" data-rel="back"
+               class="ui-btn ui-corner-all ui-shadow ui-icon-delete ui-btn-icon-notext ui-btn-right">Close</a>
+        </div>
+        <div role="main" class="ui-content">
+            <form>
+                <ul data-role="listview" data-inset="true">
+                    <li>
+                        <div class="dispInlineLabel">
+                            <label for="inputNombre">Nombre:</label>
+                        </div>
+                        <div class="dispInline">
+                            <label id="inputNombre"></label>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="dispInlineLabel">
+                            <label for="inputCorreo">Correo electr&oacute;nico:</label>
+                        </div>
+                        <div class="dispInline">
+                            <input type="email" id="inputCorreo" required rel="tooltip"
+                                   title="Por favor ingresa un correo electr&oacute;nico">
+                        </div>
+                    </li>
+                    <li>
+                        <div class="dispInlineLabel">
+                            <label for="inputTelefono">Tel&eacute;fono:</label>
+                        </div>
+                        <div class="dispInline">
+                            <input type="tel" id="inputTelefono" required rel="tooltip"
+                                   title="Por favor ingresa un n&uacute;mero de tel&eacute;fono">
+                        </div>
+                    </li>
+                    <li>
+                        <div class="dispInlineLabel">
+                            <label for="inputMensaje">Mensaje:</label>
+                        </div>
+                        <div class="dispInline">
+                            <textarea rows="5" name="inputMensaje" id="inputMensaje" required rel="tooltip"
+                                      title="Favor de introducir un mensaje."></textarea>
+                        </div>
+                    </li>
+                </ul>
+            </form>
+        </div>
+        <div class="divFooterPopup" data-role="footer">
+            <a href="#" id="btnEnviar" class="ui-btn ui-corner-all ui-shadow ui-btn-inline"
+               data-transition="flow">Enviar</a>
+        </div>
+    </div>
+
+    <div id="mensajeWindow" data-role="popup" data-dismissible="false">
+        <div id="dialog_label" data-role="header">
+            Titulo
+        </div>
+        <div role="main" class="ui-content">
+            <div id="mensaje">
+                Mensaje
+            </div>
+        </div>
+        <div id="divFooterMensaje" data-role="footer">
+            <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back" data-transition="flow">Aceptar</a>
+        </div>
+    </div>
+
+    <div id="mensajeCorreoEnviado" data-role="popup" data-dismissible="false">
+        <div class="tituloPopup" data-role="header">
+            Correo enviado
+        </div>
+        <div role="main" class="ui-content">
+            Se ha enviado un correo electr&oacute;nico al responsable. Gracias.
+        </div>
+        <div class="divFooterPopup" data-role="footer">
+            <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-rel="back" data-transition="flow">Aceptar</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

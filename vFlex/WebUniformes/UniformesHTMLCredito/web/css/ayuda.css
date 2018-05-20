@@ -1,0 +1,180 @@
+#divPage {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+
+#divInfo img {
+    vertical-align: top;
+}
+
+#divInfo div {
+    display: inline-block;
+}
+
+#divInfo {
+    position: absolute;
+    padding: 10px;
+}
+
+#divFaq {
+    position: absolute;
+    top: 85px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    text-align: center;
+}
+
+#divLeft {
+    width: 100%;
+    height: 100%;
+    display: inline-block;
+    border: 1px solid #888;
+    text-align: left;
+}
+
+#divLeft a.ui-link {
+    text-decoration: none;
+    color: #000;
+}
+
+#listaProblemas {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+#listaProblemas p {
+    margin: 0;
+    padding: 10px;
+    padding-left: 22px;
+    text-indent: -10px;
+}
+
+#divLeft li {
+    background: #FFF;
+}
+
+#divLeft li:nth-child(odd) {
+    background: #EEE;
+}
+
+.selectedRow {
+    background: #CCC !important;
+}
+
+#divRight {
+    width: 49%;
+    display: inline-block;
+    vertical-align: top;
+}
+
+.head {
+    height: 31px;
+    position: relative;
+    width: 100%;
+    background: -webkit-linear-gradient(#c30115, #76131a);
+    background: -o-linear-gradient(#c30115, #76131a);
+    background: -moz-linear-gradient(#c30115, #76131a);
+    background: linear-gradient(#c30115, #76131a);
+    text-align: center;
+    vertical-align: middle;
+    color: #fff;
+    font-size: 14px;
+    text-shadow: 0 1px rgba(0, 0, 0, .5);
+    padding-top: 6px;
+    font-weight: bold;
+}
+
+#divCausa {
+    text-align: justify;
+    height: 35%;
+    border: 1px solid #888;
+}
+
+#divSolucion {
+    text-align: justify;
+    height: calc(65% - 5px);
+    border: 1px solid #888;
+    margin-top: 3px;
+}
+
+#divHtmlCausa {
+    display: none;
+}
+
+#divHtmlSolucion {
+    display: none;
+}
+
+#divContenidoSolucion {
+    padding: 5px;
+    height: calc(100% - 47px);
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+}
+
+#divContenidoProblemas {
+    height: calc(100% - 37px);
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+}
+
+#divContenidoCausa {
+    padding: 5px;
+}
+
+#divContenidoSolucion table, th, td {
+    border: 2px solid black;
+    border-collapse: collapse;
+}
+
+#divContenidoSolucion table thead td {
+    padding: 5px;
+    text-align: center;
+    font-weight: bold;
+}
+
+#divContenidoSolucion table tbody td {
+    padding: 5px;
+    text-align: left;
+}
+
+.tituloPopup {
+    padding: 10px;
+}
+
+.divFooterPopup {
+    text-align: center;
+}
+
+#ulDescripcion {
+    display: none;
+}
+
+#divEnviarCorreoPopup {
+    width: 600px;
+}
+
+#inputNombre {
+    text-transform: capitalize;
+}
+
+.dispInline, .dispInlineLabel {
+    display: inline-block;
+    border-bottom-width: 0;
+}
+
+.dispInlineLabel {
+    min-width: 150px;
+    text-align: right;
+}
+
+.dispInlineLabel label {
+    font-weight: bold;
+}
+
+.dispInline {
+    min-width: 330px;
+}

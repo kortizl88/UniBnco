@@ -1,0 +1,417 @@
+<?xml version="1.0"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+               xmlns:s="library://ns.adobe.com/flex/spark"
+               xmlns:assets="assets.*" xmlns:mx="library://ns.adobe.com/flex/mx"
+               title="Entrega de pedido"
+               creationComplete="creationCompleteHandler()">
+    <fx:Declarations>
+        <mx:RemoteObject id="descargaPedido"
+                         destination="descargaPedido"
+                         channelSet="{ROUtil.channelSet}"
+                         result="descargaPedidoHandler(event)"
+                         fault="faultHandler(event)"/>
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import model.DatosPedido;
+
+        import mx.collections.ArrayCollection;
+        import mx.events.CloseEvent;
+        import mx.rpc.AsyncToken;
+        import mx.rpc.events.FaultEvent;
+        import mx.rpc.events.ResultEvent;
+        import mx.utils.StringUtil;
+
+        import spark.components.Alert;
+
+        import utils.MensajeUtil;
+        import utils.ROUtil;
+        import utils.StringUtils;
+
+        [Embed(source='/assets/question.png')]
+        private var iconQuestion:Class;
+
+        [Embed(source='/assets/exclamation5.png')]
+        private var iconError:Class;
+
+        private var _idEmpEntrega:Number;
+        private var _puestoEmpEntrega:String;
+        private var _nombreEmpEntrega:String;
+        private var _idEmpRecibe:Number;
+        private var _nombreEmpRecibe:String;
+        private var _idEmpPedido:Number;
+        private var _esDistrital:Boolean;
+
+        private var flagPrimeraHuellaOK:Boolean;
+
+        private static const STAT_PENDIENTE:int = 1;
+        private static const STAT_PROCESANDO:int = 2;
+        private static const STAT_ENTREGADO:int = 3;
+        private static const STAT_ERROR:int = 4;
+
+        public var mapEstatus:Dictionary;
+        public var mapDescripcionOperacion:Dictionary;
+        public var mapDetalleTecnico:Dictionary;
+        private var kitDesc:String;
+
+        [Bindable]
+        private var _detallePedido:ArrayCollection;
+
+        private var _ipServHuella:String;
+
+        public function get idEmpEntrega():Number {
+            return _idEmpEntrega;
+        }
+
+        public function set idEmpEntrega(value:Number):void {
+            _idEmpEntrega = value;
+        }
+
+        public function get puestoEmpEntrega():String {
+            return _puestoEmpEntrega;
+        }
+
+        public function set puestoEmpEntrega(value:String):void {
+            _puestoEmpEntrega = value;
+        }
+
+        public function get nombreEmpEntrega():String {
+            return _nombreEmpEntrega;
+        }
+
+        public function set nombreEmpEntrega(value:String):void {
+            _nombreEmpEntrega = value;
+        }
+
+        public function get idEmpRecibe():Number {
+            return _idEmpRecibe;
+        }
+
+        public function set idEmpRecibe(value:Number):void {
+            _idEmpRecibe = value;
+        }
+
+        public function get nombreEmpRecibe():String {
+            return _nombreEmpRecibe;
+        }
+
+        public function set nombreEmpRecibe(value:String):void {
+            _nombreEmpRecibe = StringUtils.capitalize(value);
+        }
+
+
+        public function get detallePedido():ArrayCollection {
+            return _detallePedido;
+        }
+
+        public function set detallePedido(value:ArrayCollection):void {
+            _detallePedido = value;
+        }
+
+        public function get idEmpPedido():Number {
+            return _idEmpPedido;
+        }
+
+        public function set idEmpPedido(value:Number):void {
+            _idEmpPedido = value;
+        }
+
+        public function get esDistrital():Boolean {
+            return _esDistrital;
+        }
+
+        public function set esDistrital(value:Boolean):void {
+            _esDistrital = value;
+        }
+
+        public function get ipServHuella():String {
+            return _ipServHuella;
+        }
+
+        public function set ipServHuella(value:String):void {
+            _ipServHuella = value;
+        }
+
+        private function creationCompleteHandler():void {
+            ExternalInterface.addCallback("procesaRespuesta", procesaRespuesta);
+            mapDescripcionOperacion = new Dictionary();
+            mapDetalleTecnico = new Dictionary();
+            mapEstatus = new Dictionary();
+            for (var i:String in this.detallePedido) {
+                if (!this.detallePedido.hasOwnProperty(i)) {
+                    continue;
+                }
+                var noPedido:int = this.detallePedido[i].noPedido;
+                mapEstatus[noPedido] = STAT_PENDIENTE;
+            }
+        }
+
+        private function confirmaEntrega(event:MouseEvent):void {
+            entregaButton.enabled = false;
+            var msg:String = "{0} {1}: con tu huella aceptas la entrega del kit de uniforme [{2}] al empleado {3} ({4})";
+            kitDesc = "";
+            for (var i:String in this.detallePedido) {
+                if (this.detallePedido.hasOwnProperty(i)) {
+                    kitDesc = kitDesc.concat(_detallePedido[i].totSKU, " ", _detallePedido[i].descSKU, ", ");
+                }
+            }
+            kitDesc = kitDesc.substr(0, kitDesc.length - 2);
+            var msgSubs:String = StringUtil.substitute(
+                    msg,
+                    this.puestoEmpEntrega,
+                    this.nombreEmpEntrega,
+                    kitDesc,
+                    this.nombreEmpRecibe,
+                    this.idEmpRecibe);
+            Alert.show(msgSubs, "Aviso de confirmación", Alert.OK | Alert.CANCEL, this, validarHuella, iconQuestion);
+        }
+
+        private function validarHuella(event:CloseEvent):void {
+            if (event.detail == Alert.OK) {
+                spinner.visible = true;
+                spinnerLabel.text = "Esperando autenticación biométrica";
+                var idEmpleado:Number = flagPrimeraHuellaOK ? idEmpRecibe : idEmpEntrega;
+                try {
+                    if (Globals.CONFIG.componenteHuella == "HDLoginRH") {
+                        ExternalInterface.call("validaHuellaHDLoginRH", _ipServHuella, idEmpleado);
+                    } else {
+                        ExternalInterface.call("validaHuellaUareU", idEmpleado);
+                    }
+
+                    this.closeButton.enabled = false;
+                } catch (error:Error) {
+                    Alert.show(error.message, "Error al invocar componente de Huella", Alert.OK, this, cerrarVentana, iconError);
+                    spinner.visible = false;
+                }
+
+            } else {
+                spinner.visible = false;
+                flagPrimeraHuellaOK = false;
+                entregaButton.enabled = true;
+            }
+
+        }
+
+        public function procesaRespuesta(loResult:String, mensaje:String):void {
+            spinner.visible = false;
+            if (loResult == "0") {
+                this.closeButton.enabled = true;
+                if (!flagPrimeraHuellaOK) {
+                    flagPrimeraHuellaOK = true;
+                    var msg:String = "{0} ({1}) Con tu huella confirmas la recepci\u00F3n del kit de uniforme [{2}] del {3} {4}";
+                    var msgSubs:String = StringUtil.substitute(
+                            msg,
+                            this.nombreEmpRecibe,
+                            this.idEmpRecibe,
+                            kitDesc,
+                            this.puestoEmpEntrega,
+                            this.nombreEmpEntrega);
+                    Alert.show(msgSubs, "Aviso de confirmación", Alert.OK | Alert.CANCEL, this, validarHuella, iconQuestion);
+                } else {
+                    spinner.visible = true;
+                    spinnerLabel.text = "Procesando datos";
+                    var ultimoPedidoProcesado:int = 0;
+                    for (var i:String in detallePedido) {
+                        if (!detallePedido.hasOwnProperty(i) || detallePedido[i].noPedido == ultimoPedidoProcesado) {
+                            continue;
+                        } else {
+                            ultimoPedidoProcesado = detallePedido[i].noPedido;
+                        }
+                        mapEstatus[ultimoPedidoProcesado] = STAT_PROCESANDO;
+                        var idDist:Number = esDistrital ? idEmpRecibe : NaN;
+                        var datosPedido:DatosPedido = new DatosPedido();
+                        datosPedido.folioPedido = detallePedido[i].folioPedido;
+                        datosPedido.noPedido = detallePedido[i].noPedido;
+                        datosPedido.noTienda = detallePedido[i].noTienda;
+                        datosPedido.numEmpleado = this.idEmpPedido;
+                        var token:AsyncToken = descargaPedido.grabaPedido(this.idEmpEntrega, idDist, datosPedido);
+                        token.noPedido = detallePedido[i].noPedido;
+                    }
+                    this.dispatchEvent(new Event("cambioEstatusEvent"));
+                }
+            } else if (loResult == "1") {
+                MensajeWindow.show(mensaje, "Advertencia", MensajeWindow.LEVEL_WARN, MensajeWindow.OK, mostrarHuella);
+            } else {
+                this.closeButton.enabled = true;
+                MensajeWindow.show(mensaje, "No se pudo validar la huella.", MensajeWindow.LEVEL_ERROR, MensajeWindow.OK, cerrarVentana);
+            }
+
+        }
+
+        private function mostrarHuella(event:CloseEvent):void {
+            ExternalInterface.call("mostrarHuella");
+            spinner.visible = true;
+        }
+
+        private function cerrarVentana(event:CloseEvent):void {
+            this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+        }
+
+        private function descargaPedidoHandler(event:ResultEvent):void {
+            if (event.result.codigo != 0) {
+                mapEstatus[event.token.noPedido] = STAT_ERROR;
+            } else {
+                mapEstatus[event.token.noPedido] = STAT_ENTREGADO;
+            }
+            mapDescripcionOperacion[event.token.noPedido] = event.result.descripcionOperacion;
+            mapDetalleTecnico[event.token.noPedido] = event.result.detalleTecnico;
+            this.dispatchEvent(new Event("cambioEstatusEvent"));
+            validaProcesoFinalizado();
+        }
+
+
+        private function faultHandler(event:FaultEvent):void {
+            if (event.token == null) {
+                MensajeUtil.mostrarMensajeFault(event);
+                return;
+            }
+            mapEstatus[event.token.noPedido] = STAT_ERROR;
+            mapDescripcionOperacion[event.token.noPedido] = "No se pudo enviar la petición al servicio. Favor de contactar a Soporte Técnico";
+            mapDetalleTecnico[event.token.noPedido] = event.fault.toString();
+            this.dispatchEvent(new Event("cambioEstatusEvent"));
+            validaProcesoFinalizado();
+        }
+
+
+        private function validaProcesoFinalizado():void {
+            var flagError:Boolean = false;
+            var detalleTecnico:String = "";
+            for (var i:String in mapEstatus) {
+                if (mapEstatus[i] == STAT_PROCESANDO) {
+                    return;
+                }
+                if (mapEstatus[i] == STAT_ERROR) {
+                    flagError = true;
+                    detalleTecnico = detalleTecnico.concat(mapDetalleTecnico[i]).concat("\n");
+                }
+            }
+            if (flagError) {
+                MensajeWindow.show(
+                        "Se detect\u00F3 al menos un error durante las descargas, favor de verificar los mensajes y contactar a Soporte Técnico.",
+                        "Proceso finalizado",
+                        MensajeWindow.LEVEL_ERROR,
+                        MensajeWindow.OK,
+                        null,
+                        detalleTecnico
+                );
+
+            } else {
+                var msg:String = esDistrital ?
+                        "La descarga del uniforme se ha realizado correctamente." :
+                        "¡Felicidades ya tienes tu uniforme!\nTe invitamos a portarlo, es parte de la imagen que mostramos a nuestros clientes.";
+                MensajeWindow.show(msg, "Proceso Finalizado");
+            }
+            entregaButton.visible = false;
+            entregaButton.includeInLayout = false;
+            salirButton.includeInLayout = true;
+            salirButton.visible = true;
+            spinner.visible = false;
+            this.dispatchEvent(new Event("procesoFinalizado"));
+        }
+
+        [Bindable(event="cambioEstatusEvent")]
+        private function resultadoLblFunc(data:Object, column:GridColumn):String {
+            if (mapDescripcionOperacion != null) {
+                return mapDescripcionOperacion[data[column.dataField]];
+            }
+            return "";
+        }
+        ]]>
+    </fx:Script>
+    <s:DataGrid textAlign="center" dataProvider="{_detallePedido}">
+        <s:columns>
+            <s:ArrayList>
+                <s:GridColumn headerText="Folio" dataField="folioPedido"/>
+                <s:GridColumn headerText="No. pedido" dataField="noPedido"/>
+                <s:GridColumn headerText="SKU" dataField="SKU"/>
+                <s:GridColumn headerText="Prenda" dataField="descSKU"/>
+                <s:GridColumn headerText="Total SKU" dataField="totSKU" minWidth="60"/>
+                <s:GridColumn headerText="Fecha remisión" dataField="fechaRemision"
+                              labelFunction="StringUtils.dateFormatGridColumn"/>
+                <s:GridColumn headerText="Remisión" dataField="noRemision"/>
+                <s:GridColumn headerText="Estatus">
+                    <s:itemRenderer>
+                        <fx:Component>
+                            <s:GridItemRenderer maxWidth="180" creationComplete="init()">
+                                <s:layout>
+                                    <s:HorizontalLayout verticalAlign="middle" horizontalAlign="center" paddingLeft="3"
+                                                        paddingRight="3"/>
+                                </s:layout>
+                                <fx:Script>
+                                    <![CDATA[
+
+                                    private function init():void {
+                                        outerDocument.addEventListener("cambioEstatusEvent", actualizaEstatus);
+                                    }
+
+                                    [Bindable]
+                                    private var flagPendiente:Boolean = true;
+                                    [Bindable]
+                                    private var flagProcesando:Boolean = false;
+                                    [Bindable]
+                                    private var flagEntregado:Boolean = false;
+                                    [Bindable]
+                                    private var flagError:Boolean = false;
+
+                                    public function actualizaEstatus(event:Event):void {
+                                        var estatus:int = outerDocument.mapEstatus[data.noPedido];
+                                        flagPendiente = estatus == 1;
+                                        flagProcesando = estatus == 2;
+                                        flagEntregado = estatus == 3;
+                                        flagError = estatus == 4;
+                                    }
+
+                                    private function detalleError(data:Object):void {
+                                        if (outerDocument.mapDescripcionOperacion != null) {
+                                            MensajeWindow.show(
+                                                    outerDocument.mapDescripcionOperacion[data.noPedido],
+                                                    "Error en la descarga",
+                                                    MensajeWindow.LEVEL_ERROR,
+                                                    MensajeWindow.OK,
+                                                    null,
+                                                    outerDocument.mapDetalleTecnico[data.noPedido]
+                                            );
+                                        }
+                                    }
+                                    ]]>
+                                </fx:Script>
+                                <s:Label text="Pendiente de entrega"
+                                         visible="{flagPendiente}"
+                                         includeInLayout="{flagPendiente}"/>
+                                <s:Label text="Procesando..."
+                                         visible="{flagProcesando}"
+                                         includeInLayout="{flagProcesando}"/>
+                                <s:Label text="Entregado"
+                                         visible="{flagEntregado}"
+                                         includeInLayout="{flagEntregado}"
+                                         color="green"/>
+                                <s:Label text="Error"
+                                         visible="{flagError}"
+                                         includeInLayout="{flagError}"
+                                         color="red"
+                                         textDecoration="underline"
+                                         useHandCursor="true"
+                                         mouseChildren="false"
+                                         buttonMode="true"
+                                         click="{detalleError(data)}"/>
+                            </s:GridItemRenderer>
+                        </fx:Component>
+                    </s:itemRenderer>
+                </s:GridColumn>
+            </s:ArrayList>
+        </s:columns>
+    </s:DataGrid>
+
+    <s:controlBarLayout>
+        <s:HorizontalLayout verticalAlign="middle" paddingTop="3" paddingBottom="3" paddingRight="6" paddingLeft="6"/>
+    </s:controlBarLayout>
+    <s:controlBarContent>
+        <s:HGroup id="spinner" verticalAlign="middle" horizontalAlign="right" visible="false"
+                  width="100%" height="100%">
+            <assets:Spinner tickColor="#66aaff"/>
+            <s:Label id="spinnerLabel" text="Procesando datos..."/>
+        </s:HGroup>
+        <s:Button id="entregaButton" label="Entregar" click="confirmaEntrega(event)"/>
+        <s:Button id="salirButton" label="Salir" click="cerrarVentana(null)" visible="false" includeInLayout="false"/>
+    </s:controlBarContent>
+</s:TitleWindow>

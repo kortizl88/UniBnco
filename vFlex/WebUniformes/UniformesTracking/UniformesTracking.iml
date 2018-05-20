@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="Flex" version="4">
+  <component name="FlexBuildConfigurationManager" active="UniformesTracking">
+    <configurations>
+      <configuration name="UniformesTracking" main-class="UniformesTracking" output-file="UniformesTracking.swf" output-folder="$MODULE_DIR$/../out/production/UniformesTracking">
+        <dependencies target-player="10.3">
+          <sdk name="FlexSDK-4.15.0_player-10.3" />
+        </dependencies>
+        <compiler-options>
+          <map>
+            <entry key="compiler.debug.swf" value="false" />
+            <entry key="compiler.locale" value="es_ES" />
+            <entry key="compiler.theme" value="${FLEX_SDK}/frameworks/themes/Spark/spark.css" />
+          </map>
+        </compiler-options>
+        <packaging-air-desktop />
+        <packaging-android />
+        <packaging-ios />
+      </configuration>
+    </configurations>
+    <compiler-options />
+  </component>
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+    </content>
+    <orderEntry type="jdk" jdkName="FlexSDK-4.15.0_player-10.3" jdkType="Flex SDK Type (new)" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

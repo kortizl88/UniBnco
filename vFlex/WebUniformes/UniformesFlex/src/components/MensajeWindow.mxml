@@ -1,0 +1,163 @@
+<?xml version="1.0"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+               xmlns:s="library://ns.adobe.com/flex/spark">
+    <s:layout>
+        <s:VerticalLayout verticalAlign="middle" paddingBottom="10" paddingLeft="10" paddingRight="10" gap="5"/>
+    </s:layout>
+    <fx:Declarations>
+        <s:Parallel id="mostrarInfoEffect">
+            <s:SetAction target="{infoSoporteArea}" property="visible" value="true"/>
+            <s:Resize target="{infoSoporteArea}" heightTo="120"/>
+            <s:Move3D yBy="-60" target="{this}"/>
+        </s:Parallel>
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import flashx.textLayout.conversion.TextConverter;
+
+        import mx.core.FlexGlobals;
+        import mx.core.IFlexDisplayObject;
+        import mx.events.CloseEvent;
+        import mx.managers.PopUpManager;
+
+        public static const LEVEL_INFO:int = 10;
+        public static const LEVEL_QUESTION:int = 15;
+        public static const LEVEL_WARN:int = 20;
+        public static const LEVEL_ERROR:int = 30;
+
+        public static const YES:uint = 0x0001;
+        public static const NO:uint = 0x0002;
+        public static const OK:uint = 0x0004;
+        public static const CANCEL:uint = 0x0008;
+
+        public static function show(message:String = "",
+                                    title:String = "",
+                                    level:uint = LEVEL_INFO,
+                                    flags:uint = OK,
+                                    closeHandler:Function = null,
+                                    infoSoporte:String = null,
+                                    defaultButtonIndex:uint = OK,
+                                    modal:Boolean = true):MensajeWindow {
+            var mensajeWindow:MensajeWindow = MensajeWindow(PopUpManager.createPopUp(DisplayObject(FlexGlobals.topLevelApplication), MensajeWindow, modal));
+            mensajeWindow.title = title;
+            mensajeWindow.level = level;
+            mensajeWindow.labelText = message;
+            mensajeWindow.buttonsFlag = flags;
+            mensajeWindow.defaultButtonIndex = defaultButtonIndex;
+            mensajeWindow.addEventListener(CloseEvent.CLOSE, cerrarVentanta);
+            if (infoSoporte != null) {
+                mensajeWindow.infoSoporte = infoSoporte;
+            }
+
+            if (closeHandler != null) {
+                mensajeWindow.addEventListener(CloseEvent.CLOSE, closeHandler);
+            }
+            PopUpManager.centerPopUp(mensajeWindow);
+            return mensajeWindow;
+        }
+
+        private static function cerrarVentanta(event:CloseEvent):void {
+            PopUpManager.removePopUp(IFlexDisplayObject(event.target));
+        }
+
+        [Embed(source='/assets/exclamation5.png')]
+        private var errorIcon:Class;
+
+        [Embed(source='/assets/exclamation3.png')]
+        private var warningIcon:Class;
+
+        [Embed(source='/assets/Information.png')]
+        private var infoIcon:Class;
+
+        [Embed(source='/assets/question.png')]
+        private var questionIcon:Class;
+
+        [Bindable]
+        private var okEnabled:Boolean;
+        [Bindable]
+        private var yesEnabled:Boolean;
+        [Bindable]
+        private var noEnabled:Boolean;
+        [Bindable]
+        private var cancelEnabled:Boolean;
+
+        public function set buttonsFlag(flags:uint):void {
+            okEnabled = Boolean(flags & OK);
+            yesEnabled = Boolean(flags & YES);
+            noEnabled = Boolean(flags & NO);
+            cancelEnabled = Boolean(flags & CANCEL);
+        }
+
+        public function set level(lvl:int):void {
+            switch (lvl) {
+                case LEVEL_INFO:
+                    iconImage.source = infoIcon;
+                    break;
+                case LEVEL_QUESTION:
+                    iconImage.source = questionIcon;
+                    break;
+                case LEVEL_WARN:
+                    iconImage.source = warningIcon;
+                    break;
+                case LEVEL_ERROR:
+                    iconImage.source = errorIcon;
+                    break;
+            }
+        }
+
+        public function set labelText(text:String):void {
+            msgLabel.textFlow = TextConverter.importToFlow(text, TextConverter.TEXT_FIELD_HTML_FORMAT);
+        }
+
+        public function set infoSoporte(text:String):void {
+            if (text != null) {
+                infoSoporteArea.text = text;
+                infoSoporteBox.visible = true;
+                infoSoporteBox.includeInLayout = true;
+            } else {
+                infoSoporteArea.text = "";
+                infoSoporteBox.visible = false;
+                infoSoporteBox.includeInLayout = false;
+            }
+
+        }
+
+        public function set defaultButtonIndex(index:uint):void {
+            if (index >= 0 && index < controlBarContent.length - 1) {
+                this.defaultButton = IFlexDisplayObject(controlBarContent[index]);
+            }
+        }
+
+        public function cerrarMensaje(index:uint):void {
+            dispatchEvent(new CloseEvent(CloseEvent.CLOSE, false, false, index));
+        }
+
+        private function mostrarInfoSoporte():void {
+            infoSoporteButton.enabled = false;
+            mostrarInfoEffect.play();
+        }
+        ]]>
+    </fx:Script>
+
+    <s:HGroup verticalAlign="middle" paddingTop="5">
+        <s:Image id="iconImage"/>
+        <s:RichText id="msgLabel" lineBreak="toFit" minWidth="300" maxWidth="600" paddingTop="5" paddingBottom="5"/>
+    </s:HGroup>
+    <s:VGroup id="infoSoporteBox" visible="false" includeInLayout="false" width="100%" height="100%"
+              horizontalAlign="center">
+        <s:Button id="infoSoporteButton" label="Ver información para soporte técnico" click="mostrarInfoSoporte()"/>
+        <s:TextArea id="infoSoporteArea" width="100%" height="0" editable="false" visible="false"/>
+    </s:VGroup>
+
+    <s:controlBarLayout>
+        <s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" paddingTop="7" paddingBottom="7"/>
+    </s:controlBarLayout>
+    <s:controlBarContent>
+        <s:Button label="Aceptar" click="cerrarMensaje(OK)" includeInLayout="{okEnabled}" visible="{okEnabled}"/>
+        <s:Button label="SI" click="cerrarMensaje(YES)" includeInLayout="{yesEnabled}" visible="{yesEnabled}"/>
+        <s:Button label="NO" click="cerrarMensaje(NO)" includeInLayout="{noEnabled}" visible="{noEnabled}"/>
+        <s:Button label="Cancelar" click="cerrarMensaje(CANCEL)" includeInLayout="{cancelEnabled}"
+                  visible="{cancelEnabled}"/>
+    </s:controlBarContent>
+
+</s:TitleWindow>

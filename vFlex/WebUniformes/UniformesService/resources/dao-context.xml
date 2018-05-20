@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+    <context:annotation-config/>
+
+    <context:component-scan base-package="Com.Elektra.Uniformes.Dao"/>
+
+    <import resource="ds-context.xml"/>
+
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <bean id="reposicionesMap" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="Com.Elektra.Uniformes.map.ReposicionesMap"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+
+    <bean id="solicitudesExternasMap" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="Com.Elektra.Uniformes.map.SolicitudesExternasMap"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+
+    <bean id="descuentosMap" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="Com.Elektra.Uniformes.map.DescuentosMap"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+
+    <bean id="solicitudUniformeMap" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="Com.Elektra.Uniformes.map.SolicitudUniformeMap"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+
+    <bean id="configuracionMap" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="Com.Elektra.Uniformes.map.ConfiguracionMap"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+
+    <bean id="encuestaMap" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="Com.Elektra.Uniformes.map.EncuestaMap"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+
+    <bean id="estatusPedidoMap" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="Com.Elektra.Uniformes.map.EstatusPedidoMap"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+
+    <bean id="entregaMap" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="Com.Elektra.Uniformes.map.EntregaMap"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+
+    <bean id="datosEmpleadoMap" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="Com.Elektra.Uniformes.map.DatosEmpleadoMap"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+</beans>

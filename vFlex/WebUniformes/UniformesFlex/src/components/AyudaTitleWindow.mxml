@@ -1,0 +1,231 @@
+<?xml version="1.0"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+               xmlns:s="library://ns.adobe.com/flex/spark"
+               xmlns:mx="library://ns.adobe.com/flex/mx"
+               title="Enviar correo electrónico"
+               creationCompleteEffect="{effectIn}"
+               close="cerrar(event)">
+    <s:layout>
+        <s:VerticalLayout horizontalAlign="center"/>
+    </s:layout>
+    <fx:Declarations>
+        <mx:RemoteObject id="enviaCorreoAction"
+                         destination="enviaCorreoAction"
+                         channelSet="{ROUtil.channelSet}"
+                         result="resultHandler(event)"
+                         fault="faultHandler(event)"/>
+
+        <mx:PhoneNumberValidator id="phoneNumberValidator"
+                                 source="{telefonoInput}"
+                                 property="text"
+                                 required="true" minDigits="8"
+                                 wrongLengthError="Tu teléfono debe contener al menos 8 dígitos."
+                                 invalidCharError="Tu número telefonico contiene caracteres inválidos."
+                                 requiredFieldError="Por favor ingresa tu número telefónico."/>
+        <mx:EmailValidator id="emailValidator"
+                           source="{emailInput}"
+                           property="text"
+                           required="true"
+                           invalidPeriodsInDomainError="El dominio en tu correo tiene puntos contínuos."
+                           missingAtSignError="Falta el simbolo @ en tu correo."
+                           invalidCharError="Tu correo contiene caracteres inválidos."
+                           missingPeriodInDomainError="Falta un punto en el dominio de tu correo."
+                           missingUsernameError="Falta el usuario en tu dirección de correo."
+                           tooManyAtSignsError="Tu correo tiene demasiados caracteres @."
+                           invalidIPDomainError="La IP del dominio no contiene un formato válido, debe ir entre corchetes."
+                           invalidDomainError="El dominio en tu correo no contiene un formato válido."
+                           requiredFieldError="Por favor ingresa tu correo electrónico."/>
+        <mx:StringValidator id="stringValidator"
+                            source="{mensajeEditor}"
+                            property="text"
+                            required="true"
+                            requiredFieldError="Por favor ingresa tu mensaje."/>
+        <mx:StringValidator id="tipoProblemaValidator"
+                            source="{problemaInput}"
+                            property="text"
+                            required="true"
+                            requiredFieldError="Por favor especifica o selecciona un valor de la lista"/>
+        <s:Fade id="effectIn" alphaFrom="0" alphaTo="1"/>
+
+        <s:ArrayCollection id="tipos">
+            <fx:Object code="1" text="Género equivocado"/>
+            <fx:Object code="2" text="Tienda Receptora"/>
+            <fx:Object code="3" text="Solicitud de mi Uniforme"/>
+            <fx:Object code="4" text="Kit no asignado"/>
+            <fx:Object code="5" text="Estatus de mi Uniforme"/>
+            <fx:Object code="6" text="Descuento de mi Uniforme"/>
+            <fx:Object code="7" text="Solicitud de Uniforme antes de 6 meses"/>
+            <fx:Object code="8" text="Extravío de mi Uniforme en tienda receptora"/>
+            <fx:Object code="9" text="Manual de Imagen"/>
+            <fx:Object code="10" text="Otro (Especifica)"/>
+        </s:ArrayCollection>
+
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import mx.events.CloseEvent;
+        import mx.events.ValidationResultEvent;
+        import mx.managers.PopUpManager;
+        import mx.rpc.events.FaultEvent;
+        import mx.rpc.events.ResultEvent;
+
+        import spark.events.IndexChangeEvent;
+
+        import utils.MensajeUtil;
+        import utils.ROUtil;
+
+        private var tipoProblema:String;
+
+        private var _idEmpleado:Number;
+        [Bindable]
+        private var _nombreEmpleado:String;
+
+        public function get idEmpleado():Number {
+            return _idEmpleado;
+        }
+
+        public function set idEmpleado(value:Number):void {
+            _idEmpleado = value;
+        }
+
+        public function get nombreEmpleado():String {
+            return _nombreEmpleado;
+        }
+
+        public function set nombreEmpleado(value:String):void {
+            _nombreEmpleado = value;
+        }
+
+        private function enviarCorreo(event:MouseEvent):void {
+            var vResult:ValidationResultEvent;
+            var flagValido:Boolean = true;
+            vResult = emailValidator.validate();
+            if (vResult.type == ValidationResultEvent.INVALID) {
+                flagValido = false;
+            }
+            vResult = phoneNumberValidator.validate();
+            if (vResult.type == ValidationResultEvent.INVALID) {
+                flagValido = false;
+            }
+            vResult = stringValidator.validate();
+            if (vResult.type == ValidationResultEvent.INVALID) {
+                flagValido = false;
+            }
+            if (flagValido) {
+                enviarButton.enabled = false;
+                enviaCorreoAction.enviaCorreo(
+                        _idEmpleado,
+                        _nombreEmpleado,
+                        emailInput.text,
+                        telefonoInput.text,
+                        mensajeEditor.text,
+                        tipoProblema);
+            }
+        }
+
+        private function resultHandler(e:ResultEvent):void {
+            if (!MensajeUtil.validaServiceResponse(e)) {
+                enviarButton.enabled = true;
+                return;
+            }
+            MensajeWindow.show("Se ha enviado un correo electrónico al responsable. Gracias.", "Correo enviado");
+            this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+        }
+
+        private function faultHandler(event:FaultEvent):void {
+            MensajeUtil.mostrarMensajeFault(event);
+            enviarButton.enabled = true;
+        }
+
+        private function cerrar(event:CloseEvent):void {
+            PopUpManager.removePopUp(this);
+        }
+
+        private function seleccionHandler(event:IndexChangeEvent):void {
+            var tipoProblema:Object = tipos.getItemAt(event.newIndex);
+            if (tipoProblema.code == 10) {
+                especificaGroup.visible = true;
+            } else {
+                this.tipoProblema = tipoProblema.text;
+                seleccionTipoGroup.visible = false;
+                formularioCorreo.visible = true;
+                enviarButton.enabled = true;
+            }
+        }
+
+        private function asignaTipoProblema():void {
+            var vResult:ValidationResultEvent = tipoProblemaValidator.validate();
+            if (vResult.type != ValidationResultEvent.INVALID) {
+                this.tipoProblema = problemaInput.text;
+                seleccionTipoGroup.visible = false;
+                formularioCorreo.visible = true;
+                enviarButton.enabled = true;
+            }
+        }
+        ]]>
+    </fx:Script>
+    <s:Group top="0" left="0" right="0" bottom="0">
+        <s:VGroup id="seleccionTipoGroup" top="0" left="0" right="0" bottom="0" horizontalAlign="center"
+                  verticalAlign="middle">
+            <s:Label text="Por favor elige qué tipo de problema tienes"/>
+            <s:DropDownList dataProvider="{tipos}"
+                            width="300"
+                            labelField="text"
+                            prompt="Selecciona..."
+                            change="seleccionHandler(event)"/>
+            <s:HGroup id="especificaGroup" visible="false" verticalAlign="middle">
+                <s:TextInput id="problemaInput" width="300"/>
+                <s:Button label="OK" width="50" click="asignaTipoProblema()"/>
+            </s:HGroup>
+        </s:VGroup>
+        <s:Group id="formularioCorreo"
+                 visible="false" top="0" left="0" right="0" bottom="0"
+                 showEffect="{effectIn}">
+            <s:VGroup width="100%" minWidth="450" paddingTop="10" paddingBottom="5" paddingLeft="5" paddingRight="5">
+                <s:HGroup width="100%" verticalAlign="middle">
+                    <s:Group width="40%">
+                        <s:Label text="Nombre:" width="100%" fontWeight="bold" textAlign="right"/>
+                    </s:Group>
+                    <s:Group width="60%">
+                        <s:Label text="{_nombreEmpleado}"/>
+                    </s:Group>
+                </s:HGroup>
+                <s:HGroup width="100%" verticalAlign="middle">
+                    <s:Group width="40%">
+                        <s:Label text="Correo electrónico:" width="100%" fontWeight="bold" textAlign="right"/>
+                    </s:Group>
+                    <s:Group width="60%">
+                        <s:TextInput id="emailInput" width="200"/>
+                    </s:Group>
+                </s:HGroup>
+                <s:HGroup width="100%" verticalAlign="middle">
+                    <s:Group width="40%">
+                        <s:Label text="Teléfono:" width="100%" fontWeight="bold" textAlign="right"/>
+                    </s:Group>
+                    <s:Group width="60%">
+                        <s:TextInput id="telefonoInput"/>
+                    </s:Group>
+                </s:HGroup>
+                <s:HGroup width="100%" verticalAlign="middle">
+                    <s:Group width="40%">
+                        <s:Label text="Mensaje:" width="100%" fontWeight="bold" textAlign="right"/>
+                    </s:Group>
+                    <s:Group width="60%">
+                        <s:TextArea id="mensajeEditor"/>
+                    </s:Group>
+                </s:HGroup>
+            </s:VGroup>
+        </s:Group>
+    </s:Group>
+    <s:controlBarContent>
+        <s:HGroup width="100%" horizontalAlign="center">
+            <s:Button id="enviarButton"
+                      enabled="false"
+                      label="Enviar"
+                      click="enviarCorreo(event)"
+                      chromeColor="0x0000FF"
+                      color="0xFFFFFF"/>
+        </s:HGroup>
+    </s:controlBarContent>
+
+</s:TitleWindow>

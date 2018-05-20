@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Com.Elektra.Uniformes.map.EstatusPedidoMap">
+
+    <resultMap id="DetallePedidoMap" type="Com.Elektra.Uniformes.Dto.DetallePedidoDto">
+        <result property="noPedido" column="NO_PEDIDO"/>
+        <result property="sku" column="SKU"/>
+        <result property="descripcion" column="DESC_GENERAL"/>
+        <result property="talla" column="TALLA"/>
+        <result property="totalSku" column="TOTALSKU"/>
+        <result property="numRemision" column="NO_REMISION"/>
+        <result property="estatusDesc" column="FCDESCRIPCION"/>
+        <result property="fechaEstatus" column="FECHA" typeHandler="Com.Elektra.Uniformes.map.FechaEstatusTypeHandler"/>
+    </resultMap>
+
+    <resultMap id="FolioMap" type="Com.Elektra.Uniformes.Dto.FolioDto">
+        <result property="folio" column="FOLIOPED"/>
+        <result property="fecha" column="FECHA"/>
+    </resultMap>
+
+    <select id="consultaFolio" parameterType="Com.Elektra.Uniformes.Dto.EstatusPedidoDto" statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPOBTIENEFOLIO(
+        #{folioPedido, mode=IN, jdbcType=VARCHAR},
+        #{idEmpleado, mode=IN, jdbcType=INTEGER},
+        #{noTienda, mode=OUT, jdbcType=INTEGER},
+        #{nombreTienda, mode=OUT, jdbcType=VARCHAR},
+        #{fecha, mode=OUT, jdbcType=DATE},
+        #{idEstatus, mode=OUT, jdbcType=INTEGER},
+        #{descripcionEstatus, mode=OUT, jdbcType=VARCHAR},
+        #{detalle, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=DetallePedidoMap}
+        )}
+    </select>
+
+    <select id="historialFolios" parameterType="map" statementType="CALLABLE">
+        {CALL
+        #{result.list, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=FolioMap} :=
+        RHEKT.PAWEBUNIFORMES.FNOBTIENEPEDIDO(
+        #{idEmpleado, mode=IN, jdbcType=INTEGER}
+        )}
+    </select>
+
+</mapper>

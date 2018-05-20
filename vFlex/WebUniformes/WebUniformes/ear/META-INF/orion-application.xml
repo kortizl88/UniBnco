@@ -1,0 +1,8 @@
+<orion-application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:noNamespaceSchemaLocation="http://xmlns.oracle.com/oracleas/schema/orion-application-10_0.xsd">
+    <imported-shared-libraries>
+        <remove-inherited name="oracle.xml"/>
+        <remove-inherited name="oracle.xml.security"/>
+        <remove-inherited name="oracle.jdbc"/>
+    </imported-shared-libraries>
+</orion-application>

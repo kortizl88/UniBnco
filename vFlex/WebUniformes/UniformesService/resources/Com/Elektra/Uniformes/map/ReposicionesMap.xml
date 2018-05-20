@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Com.Elektra.Uniformes.map.ReposicionesMap">
+    <resultMap id="AutorizantesResultMap" type="Com.Elektra.Uniformes.Dto.AutorizanteDto">
+        <result column="FCCORREO" property="email"/>
+        <result column="FCEMPLEADONOMBRE" property="nombre"/>
+        <result column="FCPOSICIONDESC" property="puesto"/>
+    </resultMap>
+
+    <resultMap id="ReposicionResultMap" type="Com.Elektra.Uniformes.Dto.ReposicionDto">
+        <result column="FIFOLIOREPOSICION" property="folioReposicion"/>
+        <result column="FIEMPLEADO" property="idEmpleado"/>
+        <result column="FCCORREO" property="correo"/>
+        <result column="FCTELEFONO" property="telefono"/>
+        <result column="FCMOTIVO" property="motivo"/>
+        <result column="FCMENSAJE" property="mensaje"/>
+        <result column="FCOBSERVACIONES" property="observaciones"/>
+        <result column="FIPEDIDO" property="pedido"/>
+        <result column="FISUCURSAL" property="sucursal"/>
+        <result column="FNPRECIO" property="precio"/>
+        <result column="FIIDSUBKIT" property="idSubkit"/>
+        <result column="FIESTATUSREPOSICION" property="estatus"/>
+        <result column="FCDESCRIPCION" property="descripcionCorta"
+                typeHandler="Com.Elektra.Uniformes.map.DescrCortaTypeHandler"/>
+    </resultMap>
+
+    <insert id="insertaReposicion" parameterType="Com.Elektra.Uniformes.Dto.ReposicionDto" statementType="CALLABLE">
+        {call RHEKT.PAWEBUNIFORMES.SPINSERTAREPOSICION(
+            #{idEmpleado, mode=IN, jdbcType=INTEGER},
+            #{correo, mode=IN, jdbcType=VARCHAR},
+            #{telefono, mode=IN, jdbcType=VARCHAR},
+            #{motivo, mode=IN, jdbcType=VARCHAR},
+            #{mensaje, mode=IN, jdbcType=VARCHAR},
+            #{idSubkit, mode=IN, jdbcType=INTEGER},
+            #{folioReposicion, mode=OUT, jdbcType=INTEGER}
+        )}
+    </insert>
+
+    <select id="consultaReposicion"
+            parameterType="map"
+            statementType="CALLABLE">
+        {call RHEKT.PAWEBUNIFORMES.SPCONSULTAREPOSICION(
+           #{idEmpleado, mode=IN, jdbcType=INTEGER},
+           #{idSubkit, mode=IN, jdbcType=INTEGER},
+           #{result.list, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=ReposicionResultMap}
+        )}
+    </select>
+
+    <select id="consultaReposiciones"
+            parameterType="map"
+            statementType="CALLABLE">
+        {call RHEKT.PAWEBUNIFORMES.SPCONREPOSICIONESXEMPLEADO(
+        #{idEmpleado, mode=IN, jdbcType=INTEGER},
+        #{result.list, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=ReposicionResultMap}
+        )}
+    </select>
+
+    <select id="consultaCorreoAutorizantes"
+            parameterType="map"
+            statementType="CALLABLE">
+        {call RHEKT.PAWEBUNIFORMES.SPCONAUTORIZANTESREP(
+        #{idEmpleado, mode=IN, jdbcType=INTEGER},
+        #{result.list, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=AutorizantesResultMap}
+        )}
+    </select>
+
+    <update id="confirmaReposicion" statementType="CALLABLE">
+        {call RHEKT.PAWEBUNIFORMES.SPCONFIRMANOTIFICACION(
+          #{idReposicion, mode=IN, jdbcType=INTEGER}
+        )}
+    </update>
+</mapper>
+

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Com.Elektra.Uniformes.map.DatosEmpleadoMap">
+
+    <select id="consultaCargaActiva"
+            parameterType="map"
+            statementType="CALLABLE">
+        {CALL RHEKT.PAWEBUNIFORMES.SPCONSULTACARGAACTIVA(
+        #{idEmpleado, mode=IN, jdbcType=INTEGER},
+          #{idNegocio, mode=IN, jdbcType=INTEGER},
+          #{idFuncion, mode=IN, jdbcType=INTEGER},
+        #{result.idCarga, mode=OUT, jdbcType=INTEGER},
+        #{result.bandMedidasCapturadas, mode=OUT, jdbcType=INTEGER, javaType=java.lang.Boolean},
+        #{result.modificaciones, mode=OUT, jdbcType=INTEGER, javaType=java.lang.Integer}
+        )}
+    </select>
+
+
+</mapper>

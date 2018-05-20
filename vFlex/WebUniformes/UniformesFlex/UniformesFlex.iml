@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="Flex" version="4">
+  <component name="FlexBuildConfigurationManager" active="UniformesFlex">
+    <configurations>
+      <configuration name="UniformesFlex" main-class="UniformesFlex" output-file="UniformesFlex.swf" output-folder="$MODULE_DIR$/../out/production/UniformesFlex" use-html-wrapper="true" wrapper-template-path="$MODULE_DIR$/html-template">
+        <dependencies target-player="10.3">
+          <sdk name="FlexSDK-4.15.0_player-10.3" />
+        </dependencies>
+        <compiler-options>
+          <map>
+            <entry key="compiler.debug.swf" value="false" />
+            <entry key="compiler.locale" value="es_ES" />
+            <entry key="compiler.theme" value="${FLEX_SDK}/frameworks/themes/Spark/spark.css" />
+          </map>
+          <option name="additionalOptions" value="-optimize=true -strict=true" />
+        </compiler-options>
+        <packaging-air-desktop />
+        <packaging-android />
+        <packaging-ios />
+      </configuration>
+    </configurations>
+    <compiler-options />
+  </component>
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/locale/es_ES" isTestSource="false" />
+    </content>
+    <orderEntry type="jdk" jdkName="FlexSDK-4.15.0_player-10.3" jdkType="Flex SDK Type (new)" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" exported="" name="granite-server-3.0.1.GA" level="project" />
+  </component>
+</module>

@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services-config>
+    <services>
+        <service id="granite-service"
+                 class="flex.messaging.services.RemotingService"
+                 messageTypes="flex.messaging.messages.RemotingMessage">
+            <destination id="consultaEmpleado">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>consultaEmpleado</source>
+                </properties>
+            </destination>
+            <destination id="descargaPedido">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>descargaPedido</source>
+                </properties>
+            </destination>
+            <destination id="descuentoEmpleado">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>descuentoEmpleado</source>
+                </properties>
+            </destination>
+            <destination id="enviaCorreoAction">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>enviaCorreoAction</source>
+                </properties>
+            </destination>
+            <destination id="estatusPedido">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>estatusPedido</source>
+                </properties>
+            </destination>
+            <destination id="grabaPedido">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>grabaPedido</source>
+                </properties>
+            </destination>
+            <destination id="pedidosPendientes">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>pedidosPendientes</source>
+                </properties>
+            </destination>
+            <destination id="posicionAyuda">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>posicionAyuda</source>
+                </properties>
+            </destination>
+            <destination id="reposicionesService">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>reposicionesService</source>
+                </properties>
+            </destination>
+            <destination id="solicitudesExternas">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>solicitudesExternas</source>
+                </properties>
+            </destination>
+            <destination id="solicitudUniforme">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>solicitudUniforme</source>
+                </properties>
+            </destination>
+            <destination id="tiendaPorEmpleado">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>tiendaPorEmpleado</source>
+                </properties>
+            </destination>
+            <destination id="trackingService">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>trackingService</source>
+                </properties>
+            </destination>
+            <destination id="configuracionService">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>configuracionService</source>
+                </properties>
+            </destination>
+            <destination id="encuestaService">
+                <channels>
+                    <channel ref="graniteamf"/>
+                </channels>
+                <properties>
+                    <factory>springFactory</factory>
+                    <source>encuestaService</source>
+                </properties>
+            </destination>
+        </service>
+    </services>
+
+    <factories>
+        <factory id="springFactory" class="org.granite.spring.SpringServiceFactory"/>
+    </factories>
+
+    <channels>
+        <channel-definition id="graniteamf" class="mx.messaging.channels.AMFChannel">
+            <endpoint uri="http://{server.name}:{server.port}/{context.root}/graniteamf/amf"
+                      class="flex.messaging.endpoints.AMFEndpoint"/>
+        </channel-definition>
+    </channels>
+</services-config>

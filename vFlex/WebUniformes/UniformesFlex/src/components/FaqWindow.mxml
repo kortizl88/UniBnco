@@ -1,0 +1,259 @@
+<?xml version="1.0"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+                xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:s="library://ns.adobe.com/flex/spark"
+                title="Preguntas frecuentes" width="750" height="500"
+                creationComplete="creationCompleteHandler(event)"
+                showEffect="{fadeIn}">
+    <s:layout>
+        <s:VerticalLayout gap="0" padding="3"/>
+    </s:layout>
+
+    <fx:Declarations>
+        <s:Fade id="fadeIn" alphaFrom="0" alphaTo="1"/>
+        <s:Parallel id="effectOut" effectEnd="abrirVentanaCorreo()" target="{this}">
+            <s:Fade alphaFrom="1" alphaTo="0"/>
+            <s:Move3D xBy="1000"/>
+        </s:Parallel>
+        <s:Sequence id="mostrarInfoEffect">
+            <s:Resize widthTo="{faqPanel.width / 2}" target="{faqPanel}"/>
+            <s:SetAction property="visible" value="true" target="{infoGroup}"/>
+            <s:SetAction property="includeInLayout" value="true" target="{infoGroup}"/>
+            <s:Parallel>
+                <s:Move3D yFrom="-200" yTo="0" target="{panelCausa}"/>
+                <s:Fade alphaFrom="0" alphaTo="1" targets="{[panelCausa, panelSolucion]}"/>
+                <s:Move3D yFrom="500" yTo="0" target="{panelSolucion}"/>
+            </s:Parallel>
+        </s:Sequence>
+    </fx:Declarations>
+    <fx:Script>
+        <![CDATA[
+        import flashx.textLayout.conversion.TextConverter;
+
+        import mx.collections.ArrayCollection;
+        import mx.core.FlexGlobals;
+        import mx.events.CloseEvent;
+        import mx.events.FlexEvent;
+        import mx.managers.PopUpManager;
+
+        import spark.events.IndexChangeEvent;
+
+        private var _idEmpleado:Number;
+        private var _nombreEmpleado:String;
+        private static const INDEX_TABLA_STATUS:int = 10;
+
+        private const listaPreguntas:ArrayCollection = new ArrayCollection(
+                [
+                    {
+                        prob: "Me aparecen tallas de mujer y soy hombre o viceversa.",
+                        causa: "Fuiste dado de alta en RH con género equivocado.",
+                        solucion: "Pide a tu regional que solicite la corrección de género con RH, el cambio se debe hacer desde la plantilla."
+                    },
+                    {
+                        prob: "Al querer elegir la tienda receptora, me aparecen tiendas que no son de mi región.",
+                        causa: "Los centros de costos tardan para estar actualizados en línea.",
+                        solucion: "El sistema te permite elegir o capturar la tienda receptora. Sé muy cuidadoso en capturarla, asegúrate de que sea una tienda cercana."
+                    },
+                    {
+                        prob: "Me aparece una tienda receptora que no me corresponde y no puedo cambiarla.",
+                        causa: "El centro de costos con el cual fuiste dado de alta corresponde a esa tienda.",
+                        solucion: "Pide a tu regional que actualice tu centro de costos, este debe coincidir con la tienda donde te encuentras físicamente."
+                    },
+                    {
+                        prob: "No puedo pedir uniformes, las prendas a elegir están bloqueadas.",
+                        causa: "Las solicitudes son cada 6 meses y deben estar recibidas con la huella.",
+                        solucion: "Recuerda cuándo fue tu última solicitud y si la recibiste con tu huella. El sistema te permite solicitar cada 6 meses y dicha solicitud debe estar descargada con tu huella. Existen excepciones: robo, desgaste, etc. En estos casos envíanos un correo, nos encuentras en Lotus: Jose Guadalupe Vallejo Reyes o Hugo Daniel García Macías."
+                    },
+                    {
+                        prob: "Me aparece un mensaje de \"no tienes un kit asignado\".",
+                        causa: "Seguramente tu puesto es nuevo y no tiene uniforme configurado.",
+                        solucion: "Repórtalo de inmediato para configurarle uniforme a tu puesto."
+                    },
+                    {
+                        prob: "Únicamente las camisas tienen estatus \"Recibido en Tienda\" y los pantalones no ¿puedo ir a recoger las camisas?",
+                        causa: "Cuando generas solicitud de camisas y pantalones en un pedido, este puede llegar en parcialidades; solo las camisas, por ejemplo. Los pantalones seguramente no se enviaron por falta de inventario.",
+                        solucion: "Acude a la tienda por lo que haya llegado (estatus \"Recibido en tienda\") y recíbelo con tu huella. El resto del pedido llegará posteriormente y deberás darle seguimiento en \"Estatus de mi uniforme\"."
+                    },
+                    {
+                        prob: "Me están descontando pedidos anteriores.",
+                        causa: "Confirmaste la entrega de los pedidos por sistema.",
+                        solucion: "Al momento de recibir tus uniformes, revisa bien lo que te está entregando el gerente tanto físicamente como por sistema, deben coincidir y confirma con tu huella."
+                    },
+                    {
+                        prob: "El gerente me dice que no llegaron mis uniformes, pero en sistema el estatus es \"Recibido en Tienda\".",
+                        causa: "Extravío de uniformes.",
+                        solucion: "Cuando el estatus es \"Recibido en tienda\" quiere decir que el gerente recibió e ingresó una remisión que contiene dichos uniformes. Por esa razón debes acudir de inmediato por tu uniforme y reportar cualquier anomalía. En caso de extravío, envíanos un correo, nos encuentras en Lotus: Jose Guadalupe Vallejo Reyes o Hugo Daniel García Macías."
+                    },
+                    {
+                        prob: "Los descuentos no se reflejan en la sección \"Uniforme en descuento\".",
+                        causa: "\"Uniforme en descuento\" es una sección informativa.",
+                        solucion: "Los descuentos llegan a tardar hasta 4 semanas en verse reflejados en sistema de uniformes, sin embargo sí se están tomando en cuenta. Puedes consultar con Servicios al Personal (extensión 74150) que te envíen una relación de tus pagos de Uniforme. También te recomendamos que guardes tus recibos para cualquier aclaración y envíanos un correo, nos encuentras en Lotus: Jose Guadalupe Vallejo Reyes o Hugo Daniel García Macías."
+                    },
+                    {
+                        prob: "En sistema de uniformes dice que mi último pago era en la semana 5 y me descontaron en la semana 6.",
+                        causa: "La información mostrada corresponde a la semana que se está cobrando, no a la semana en que se aplicó el descuento.",
+                        solucion: "El descuento corresponde a la semana siguiente. Ejemplo: dice que mi último descuento es de la semana 06 - martes 03 de febrero. Este pago será aplicado en la semana 07, correspondiente a la semana 06."
+                    },
+                    {
+                        prob: "No entiendo el estatus de mi Uniforme.",
+                        causa: "",
+                        solucion: ""
+                    }
+                ]
+        );
+
+        public function set idEmpleado(value:Number):void {
+            _idEmpleado = value;
+        }
+
+        public function set nombreEmpleado(value:String):void {
+            _nombreEmpleado = value;
+        }
+
+        private function listaChangeHandler(event:IndexChangeEvent):void {
+            causaText.text = listaPreguntas[event.newIndex].causa;
+            solucionText.textFlow = TextConverter.importToFlow(listaPreguntas[event.newIndex].solucion, TextConverter.TEXT_FIELD_HTML_FORMAT);
+            if (event.newIndex == INDEX_TABLA_STATUS) {
+                solucionText.visible = false;
+                solucionText.includeInLayout = false;
+                estatusList.visible = true;
+                estatusList.includeInLayout = true;
+            } else {
+                solucionText.visible = true;
+                solucionText.includeInLayout = true;
+                estatusList.visible = false;
+                estatusList.includeInLayout = false;
+            }
+            if (!infoGroup.visible) {
+                mostrarInfoEffect.play();
+            }
+        }
+
+        private function abrirVentanaCorreo():void {
+            var correoPopUp:AyudaTitleWindow = AyudaTitleWindow(
+                    PopUpManager.createPopUp(DisplayObject(FlexGlobals.topLevelApplication), AyudaTitleWindow, true));
+            correoPopUp.idEmpleado = _idEmpleado;
+            correoPopUp.nombreEmpleado = _nombreEmpleado;
+            PopUpManager.centerPopUp(correoPopUp);
+            dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+        }
+
+        private function creationCompleteHandler(event:FlexEvent):void {
+            causaText.text = listaPreguntas[0].causa;
+            solucionText.textFlow = TextConverter.importToFlow(listaPreguntas[0].solucion, TextConverter.TEXT_FIELD_HTML_FORMAT);
+        }
+        ]]>
+    </fx:Script>
+    <s:HGroup verticalAlign="middle" width="100%">
+        <s:Image source="@Embed(source='/assets/Information.png')"/>
+        <s:VGroup gap="3">
+            <s:Label text="Para ver la información selecciona tu problema de la siguiente lista."/>
+            <s:Label text="Si tu problema no aparece o tienes alguna otra duda, sugerencia o comentario"/>
+            <s:Label text="Envíanos un correo aqui" color="blue" textDecoration="underline" useHandCursor="true"
+                     buttonMode="true" click="effectOut.play()"/>
+        </s:VGroup>
+    </s:HGroup>
+    <s:HGroup height="100%" width="100%" gap="3">
+        <s:Panel id="faqPanel" title="Problema" width="100%" height="100%" dropShadowVisible="false"
+                 skinClass="skins.RedPanelSkin">
+            <s:List dataProvider="{listaPreguntas}" width="100%" height="100%"
+                    change="listaChangeHandler(event)"
+                    useVirtualLayout="false"
+                    borderVisible="false"
+                    alternatingItemColors="[0xFFFFFF, 0xEEEEEE]">
+                <s:layout>
+                    <s:VerticalLayout variableRowHeight="true" gap="0"/>
+                </s:layout>
+                <s:itemRenderer>
+                    <fx:Component>
+                        <s:ItemRenderer width="100%">
+                            <s:layout>
+                                <s:HorizontalLayout gap="0" verticalAlign="middle"/>
+                            </s:layout>
+                            <s:Image source="@Embed(source='/assets/bullet_black_alt.png')"/>
+                            <s:Label lineBreak="toFit" width="100%" text="{data.prob}" paddingLeft="5" paddingRight="5"
+                                     paddingTop="15" paddingBottom="15" useHandCursor="true" buttonMode="true"/>
+                        </s:ItemRenderer>
+                    </fx:Component>
+                </s:itemRenderer>
+            </s:List>
+        </s:Panel>
+        <s:VGroup id="infoGroup" height="100%" width="50%" visible="false" includeInLayout="false" gap="3">
+            <s:Panel id="panelCausa" title="Causa" width="100%" height="30%" dropShadowVisible="false"
+                     skinClass="skins.RedPanelSkin">
+            <s:RichText id="causaText" width="100%" height="100%" textAlign="justify" verticalAlign="middle"
+                            paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+            </s:Panel>
+            <s:Group width="100%" height="70%">
+                <s:Panel id="panelSolucion" title="Solución"
+                         width="100%" height="100%"
+                         dropShadowVisible="false"
+                         skinClass="skins.RedPanelSkin">
+                    <s:RichText id="solucionText" width="100%" height="100%" textAlign="justify" verticalAlign="middle"
+                                paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"/>
+                    <s:List id="estatusList" visible="false" includeInLayout="false" width="100%" height="100%"
+                            useVirtualLayout="false" preventSelection="true">
+                        <s:layout>
+                            <s:VerticalLayout useVirtualLayout="false" variableRowHeight="true" gap="0"/>
+                        </s:layout>
+                        <s:itemRenderer>
+                            <fx:Component>
+                                <s:ItemRenderer width="100%" autoDrawBackground="false">
+                                    <s:layout>
+                                        <s:HorizontalLayout gap="0"/>
+                                    </s:layout>
+                                    <s:Group width="40%" height="100%">
+                                        <s:Rect left="0" top="0" right="0" bottom="0">
+                                            <s:stroke>
+                                                <s:SolidColorStroke color="0x000000"/>
+                                            </s:stroke>
+                                        </s:Rect>
+                                        <s:Label text="{data.key}" textAlign="{itemIndex == 0 ? 'center' : 'left'}"
+                                                 fontWeight="{itemIndex == 0 ? 'bold' : 'normal'}"
+                                                 left="10" right="10" top="10" bottom="10"
+                                                 verticalAlign="middle"/>
+                                    </s:Group>
+                                    <s:Group width="60%" height="100%">
+                                        <s:Rect left="0" top="0" right="0" bottom="0">
+                                            <s:stroke>
+                                                <s:SolidColorStroke color="0x000000"/>
+                                            </s:stroke>
+                                        </s:Rect>
+                                        <s:Label textAlign="{itemIndex == 0 ? 'center' : 'left'}"
+                                                 text="{data.value}"
+                                                 fontWeight="{itemIndex == 0 ? 'bold' : 'normal'}"
+                                                 left="10" right="10" top="10" bottom="10"/>
+                                    </s:Group>
+                                </s:ItemRenderer>
+                            </fx:Component>
+                        </s:itemRenderer>
+                        <s:dataProvider>
+                            <mx:ArrayCollection>
+                                <fx:Object key="Estatus" value="Descripción"/>
+                                <fx:Object key="Solicitado"
+                                           value="Enviaste la solicitud de uniforme, generando un folio, mismo que se compone de varios pedidos."/>
+                                <fx:Object key="Atendido en CD"
+                                           value="Tu folio se encuentra en el Centro de Distribución."/>
+                                <fx:Object key="Reinyectado"
+                                           value="Tu pedido fue devuelto por la tienda porque no llegó correctamente, por lo tanto, se cancela y se genera automáticamente otro pedido."/>
+                                <fx:Object key="Parcialmente enviado a tienda"
+                                           value="El Centro de Distribución envía una parte de tu folio."/>
+                                <fx:Object key="Enviado a tienda"
+                                           value="El Centro de Distribución envió a tienda tu folio completo o el complemento del mismo (pedidos faltantes)"/>
+                                <fx:Object key="Parcialmente recibido en tienda"
+                                           value="La tienda recibió una parte de tu folio y lo ingresó a su inventario."/>
+                                <fx:Object key="Recibido en tienda"
+                                           value="La tienda recibió tu folio completo o el complemento del mismo y lo ingresó a su inventario."/>
+                                <fx:Object key="Parcialmente entregado"
+                                           value="Liberaste, descargaste con tu huella una parte de tu folio."/>
+                                <fx:Object key="Entregado"
+                                           value="Liberaste, descargaste con tu huella el folio completo o los pedidos restantes para completarlo."/>
+                            </mx:ArrayCollection>
+                        </s:dataProvider>
+                    </s:List>
+
+                </s:Panel>
+            </s:Group>
+
+        </s:VGroup>
+    </s:HGroup>
+</s:TitleWindow>
